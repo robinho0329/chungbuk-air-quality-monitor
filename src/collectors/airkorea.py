@@ -16,12 +16,21 @@
 from __future__ import annotations
 
 import math
+import re
 import time
 from datetime import datetime
 from typing import Any
 
 import requests
 from loguru import logger
+
+# URL/메시지에 노출되는 serviceKey 값을 마스킹하기 위한 정규식
+_SERVICE_KEY_PATTERN = re.compile(r"(serviceKey=)[^&\s]+", re.IGNORECASE)
+
+
+def _scrub_key(text: str) -> str:
+    """문자열 내 serviceKey 파라미터를 마스킹한다."""
+    return _SERVICE_KEY_PATTERN.sub(r"\1***MASKED***", text)
 
 from src.config import AIRKOREA_API_KEY
 from src.storage.models import AirQualityMeasurement
@@ -154,17 +163,19 @@ class AirkoreaClient:
 
             except (requests.RequestException, RuntimeError, ValueError) as exc:
                 last_error = exc
+                scrubbed = _scrub_key(str(exc))
                 logger.warning(
-                    f"API 호출 실패 (attempt {attempt}/{_MAX_RETRIES}): {exc}"
+                    f"API 호출 실패 (attempt {attempt}/{_MAX_RETRIES}): {scrubbed}"
                 )
                 if attempt < _MAX_RETRIES:
                     time.sleep(backoff)
                     backoff *= 2.0
 
-        # 모든 재시도 실패
+        # 모든 재시도 실패. 인증키 노출 방지를 위해 chained traceback은 끊는다.
+        scrubbed_last = _scrub_key(str(last_error))
         raise RuntimeError(
-            f"API 호출이 {_MAX_RETRIES}회 모두 실패했습니다: {last_error}"
-        ) from last_error
+            f"API 호출이 {_MAX_RETRIES}회 모두 실패했습니다: {scrubbed_last}"
+        ) from None
 
     # ------------------------------------------------------------------
     # 1. 측정소정보 조회
