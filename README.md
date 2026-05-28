@@ -57,16 +57,46 @@ src/
     ├── models.py          # SQLModel 스키마
     └── database.py        # DB 초기화·CRUD
 scripts/
-├── check_stations.py      # 측정소 정보 검증
-└── collect_once.py        # 수집→저장 1회 실행
+├── check_stations.py        # 측정소 정보 검증
+├── collect_once.py          # 수집→저장 1회 실행
+└── analyze_capability.py    # Cp/Cpk 분석 리포트
+src/analysis/
+├── usl_lsl.py               # 환경기준 USL/LSL 상수
+└── capability.py            # 공정능력지수 계산
+flows/
+└── collect_flow.py          # Prefect 수집 워크플로우
 docs/
-└── stations.md            # 측정소 정의 문서
-.claude/agents/            # 서브에이전트 정의 5종
+├── stations.md              # 측정소 정의 문서
+└── PHASE2_HANDOFF.md        # Phase 2 진입 메모
+.claude/agents/              # 서브에이전트 정의 5종
+```
+
+## Prefect 스케줄링으로 데이터 자동 누적
+
+1회 실행:
+```bash
+uv run python flows/collect_flow.py
+```
+
+스케줄 등록 (매시 5분에 자동 실행, 터미널 켜둔 상태에서만):
+```bash
+uv run python -c "from flows.collect_flow import deploy; deploy()"
+```
+
+위 명령은 임시 Prefect 서버를 함께 띄우고 그 프로세스가 살아있는 동안 매시 5분에 자동 수집을 수행합니다. 컴퓨터/터미널을 끄면 중단됩니다.
+
+## Cp/Cpk 분석
+
+```bash
+# 누적 데이터가 측정소당 30건 이상일 때부터 의미 있는 결과
+uv run python scripts/analyze_capability.py            # daily USL
+uv run python scripts/analyze_capability.py --basis hourly
+uv run python scripts/analyze_capability.py --basis annual
 ```
 
 ## Phase 진행 상태
 
-- [x] **Phase 1**: 수집 + SQLite 저장 (현재 세션)
-- [ ] **Phase 2**: SPC 분석 (Cp/Cpk, 관리도, Western Electric Rules)
-- [ ] **Phase 3**: Prefect 스케줄 + Streamlit 대시보드 + Discord 알림
+- [x] **Phase 1**: 수집 + SQLite 저장
+- [~] **Phase 2**: SPC 분석 (Cp/Cpk 완료, 관리도/WE Rules/이상탐지 예정)
+- [~] **Phase 3**: Prefect 스케줄 완료. Streamlit 대시보드 + Discord 알림 예정
 - [ ] **Phase 4**: 기상 데이터 결합 + 회귀 분석 (선택)
