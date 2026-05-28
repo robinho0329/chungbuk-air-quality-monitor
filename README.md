@@ -73,17 +73,17 @@ docs/
 
 ## Prefect 스케줄링으로 데이터 자동 누적
 
-1회 실행:
+**1회 실행 (디버깅용)**:
 ```bash
 uv run python flows/collect_flow.py
 ```
 
-스케줄 등록 (매시 5분에 자동 실행, 터미널 켜둔 상태에서만):
-```bash
-uv run python -c "from flows.collect_flow import deploy; deploy()"
-```
+**매시 5분 자동 실행 (운영급, 정식 서버 + 워커)**:
+설정 절차는 [`docs/PREFECT_SETUP.md`](docs/PREFECT_SETUP.md) 참조.
+3개 터미널을 사용합니다 (server + worker + 검증/UI).
 
-위 명령은 임시 Prefect 서버를 함께 띄우고 그 프로세스가 살아있는 동안 매시 5분에 자동 수집을 수행합니다. 컴퓨터/터미널을 끄면 중단됩니다.
+> ⚠️ `flow.serve()`만으로는 **스케줄러가 동작하지 않습니다** (Prefect 3 ephemeral 서버 한계).
+> 매시 cron 자동 실행을 원하면 반드시 `prefect server start`를 먼저 띄워야 합니다.
 
 ## Cp/Cpk 분석
 
