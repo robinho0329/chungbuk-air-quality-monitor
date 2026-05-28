@@ -9,8 +9,12 @@
 ![Tests](https://img.shields.io/badge/tests-60%2F60%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-🔗 **라이브 데모**: *Streamlit Cloud 배포 후 여기에 URL 추가*
+🔗 **라이브 데모**: **https://chungbuk-air-quality-monitor-dfusndrdtukcwk9rog6wzt.streamlit.app/**
 📂 **레포**: https://github.com/robinho0329/chungbuk-air-quality-monitor
+
+> 클릭만 하시면 매시 자동 누적되는 충북 4개 측정소 대기질 데이터를
+> 5페이지(홈/수집 모니터링/실시간 측정값/공정능력 분석/단지 비교)에서 확인할 수 있습니다.
+> 컴퓨터를 꺼도 GitHub Actions가 매시 데이터를 추가하므로 계속 새로워집니다.
 
 ---
 
