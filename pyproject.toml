@@ -11,6 +11,8 @@ dependencies = [
     "python-dotenv>=1.1",
     "loguru>=0.7",
     "prefect>=3.7.2",
+    "streamlit>=1.57.0",
+    "plotly>=6.7.0",
 ]
 
 [project.optional-dependencies]
