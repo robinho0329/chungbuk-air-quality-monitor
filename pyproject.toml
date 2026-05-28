@@ -3,7 +3,7 @@ name = "chungbuk-air-quality-monitor"
 version = "0.1.0"
 description = "충북권 산업단지 대기질 실시간 모니터링 시스템 (SPC/Cp/Cpk)"
 readme = "README_PROJECT.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "requests>=2.32",
     "pandas>=2.2",
