@@ -106,8 +106,16 @@ class AirkoreaClient:
 
         Args:
             service_key: 에어코리아 Decoding 키. None이면 config.AIRKOREA_API_KEY 사용.
+
+        Raises:
+            ValueError: 키가 없거나 빈 문자열일 때.
         """
         self._service_key = service_key or AIRKOREA_API_KEY
+        if not self._service_key:
+            raise ValueError(
+                "AIRKOREA_API_KEY가 설정되지 않았습니다. "
+                "로컬: .env 파일에 추가. GitHub Actions: Repository Secret 등록."
+            )
         self._session = requests.Session()
         logger.debug(
             f"AirkoreaClient 초기화 (key={_mask_key(self._service_key)})"

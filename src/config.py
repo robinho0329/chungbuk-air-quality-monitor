@@ -48,8 +48,11 @@ def _optional(name: str, default: str) -> str:
 # ============================================================
 # 에어코리아 OpenAPI
 # ============================================================
-# Decoding 키 (URL 디코딩된 형태). requests의 params로 넘기면 자동 인코딩됨.
-AIRKOREA_API_KEY: str = _require("AIRKOREA_API_KEY")
+# 키 검증은 사용 시점(collectors/airkorea.py)에 수행한다.
+# 이렇게 해야 dashboard처럼 수집을 안 하는 컴포넌트도 키 없이 import 가능
+# (Streamlit Cloud 배포 시 import-time ValueError 회피).
+# Decoding 키 (URL 디코딩된 형태). requests params에 넘기면 자동 인코딩됨.
+AIRKOREA_API_KEY: str = _optional("AIRKOREA_API_KEY", "")
 
 # Encoding 키 (URL 인코딩된 형태). 일부 호출에서 백업용으로 사용.
 AIRKOREA_API_KEY_ENCODED: str = _optional("AIRKOREA_API_KEY_ENCODED", "")

@@ -1,110 +1,150 @@
-# Chungbuk Air Quality Monitor
+# 🌬️ 충북권 산업단지 대기질 SPC 모니터링 시스템
 
-충북권 산업단지 대기질 실시간 모니터링 시스템.
-SPC(통계적 공정관리)와 Cp/Cpk 기반 이상 탐지를 자동화하는 QC/API 직무 포트폴리오.
+> **충북 4개 측정소(이차전지·화학·바이오 산단 + 거주지 베이스라인)의 대기질을
+> 매시 자동 수집하여 통계적 공정관리(SPC)로 분석하는 무중단·무비용 운영 시스템.**
 
-자세한 프로젝트 배경은 [`README_PROJECT.md`](./README_PROJECT.md) 참조.
+[![Auto Collect](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions/workflows/collect.yml/badge.svg)](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions)
+![Python](https://img.shields.io/badge/Python-3.14-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.57-FF4B4B)
+![Tests](https://img.shields.io/badge/tests-60%2F60%20passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## 빠른 시작
+🔗 **라이브 데모**: *Streamlit Cloud 배포 후 여기에 URL 추가*
+📂 **레포**: https://github.com/robinho0329/chungbuk-air-quality-monitor
 
-### 1. 의존성 설치 (이미 완료된 경우 생략)
+---
+
+## 🎯 프로젝트 목적
+
+QC/API 생산관리 직무에서 핵심 역량인 **SPC(통계적 공정관리)** + **6시그마 DMAIC** + **데이터 파이프라인 자동화**를 실데이터로 직접 구현해 입증하기 위한 시스템.
+
+대기질을 제조 공정으로 빗댄 **메타포 프로젝트**:
+
+| 제조 공정 (실제 직무) | 본 프로젝트 |
+|---------------------|-----------|
+| 공정 라인 N개 | 측정소 4곳 |
+| 측정 지표 (불량률, 치수 등) | 6종 오염물질 (PM10/2.5, O3, NO2, SO2, CO) |
+| 규격 한계 USL/LSL | 대기환경보전법 환경기준 |
+| 시간당 샘플링 | 시간당 API 호출 |
+| 공정능력지수 Cp/Cpk | (그대로) |
+| 관리도 + Western Electric Rules | (그대로) |
+
+---
+
+## 🧭 6시그마 DMAIC 매핑
+
+| 단계 | 활동 | 본 시스템 구현 |
+|------|------|-------------|
+| **D**efine | 문제 정의 | 산단 인근 대기질이 거주지보다 나쁜가? 어느 지표가 가장 문제인가? |
+| **M**easure | 측정 시스템 구축 | `collectors/airkorea.py` + `flows/collect_flow.py` + GitHub Actions 매시 자동 수집 |
+| **A**nalyze | 통계 분석 | `analysis/capability.py` Cp/Cpk + 단지 간 비교 (t-test/ANOVA 예정) |
+| **I**mprove | 개선 권고 | Cpk 낮은 지표 식별 → 우선 관리 대상 도출 (분석 보고서) |
+| **C**ontrol | 지속 모니터링 | Streamlit 대시보드 + Western Electric Rules 자동 알림 (예정) |
+
+---
+
+## 🏗️ 시스템 아키텍처
+
+```mermaid
+flowchart LR
+    A[에어코리아 OpenAPI] -->|매시 :15 UTC| B[GitHub Actions Runner]
+    B -->|uv + Python 3.14| C[scripts/collect_once.py]
+    C -->|INSERT OR IGNORE| D[(SQLite data.db)]
+    D -->|auto commit & push| E[GitHub Repo]
+    E -->|auto redeploy| F[Streamlit Cloud]
+    F -->|시각화| G[대시보드 5 페이지]
+
+    H[로컬 PC] -.->|선택: 분석| D
+    H -.->|pytest 60건| I[CI 검증]
+```
+
+**핵심 특징**:
+- ✅ **무중단**: GitHub 서버에서 매시 자동 실행 (사용자 PC 무관)
+- ✅ **무비용**: GitHub Actions public repo 무제한 + Streamlit Cloud Community Tier
+- ✅ **무누락**: INSERT OR IGNORE + UNIQUE(station, time)로 중복·재실행 안전
+- ✅ **자가복구**: API 일시 장애 시 지수 백오프 재시도 3회
+
+---
+
+## 🌬️ 측정소 정의
+
+| 측정소 | 단지 성격 | 위도, 경도 |
+|--------|----------|----------|
+| 오창읍 | 오창과학산업단지 (이차전지·반도체) | 36.713311, 127.420517 |
+| 복대동 | 청주산업단지 (전자·화학) | 36.634423, 127.447045 |
+| 오송읍 | 오송생명과학단지 (바이오·제약) | 36.631358, 127.329472 |
+| 용암동 | 도시 베이스라인 (거주지) | 36.608818, 127.501293 |
+
+---
+
+## ⚙️ 기술 스택
+
+| 영역 | 도구 | 선택 이유 |
+|------|------|---------|
+| 수집 | requests + 지수 백오프 재시도 | API 일시 장애 자가복구 |
+| 저장 | SQLite + SQLModel | 단일 파일 → repo 영속화 용이 |
+| 분석 | pandas + numpy | 표준 시계열 처리 |
+| 통계 | Cp/Cpk (자체 구현) + scipy(예정) | 환경기준 기반 SPC |
+| 시각화 | Streamlit + Plotly | 한국어 멀티페이지, 인터랙티브 |
+| 자동화 | **GitHub Actions** + Prefect (로컬용) | 무비용 무중단 |
+| 환경 | uv + Python 3.14 | 빠른 의존성 관리, lock 재현성 |
+| 테스트 | pytest (60건 / all passing) | 변환·마스킹·DB 제약·SPC 계산 |
+| 보안 | dotenv + 로그 마스킹 | API 키 노출 차단 |
+
+---
+
+## 🚀 빠른 시작
+
+### 로컬 실행
 
 ```bash
+# 1. 의존성 설치
 uv sync
-```
 
-### 2. 환경 변수 설정
-
-```bash
+# 2. 환경 변수 설정
 cp .env.example .env
-# .env 파일을 열어 AIRKOREA_API_KEY 입력
-```
+# .env에 AIRKOREA_API_KEY 입력
 
-에어코리아 인증키는 [공공데이터포털](https://www.data.go.kr/data/15073861/openapi.do)에서
-신청한다. **Decoding 키**(URL 디코딩된 평문)를 `AIRKOREA_API_KEY`에 넣는다.
-
-### 3. 측정소 정보 확인 (1회성)
-
-```bash
-uv run python scripts/check_stations.py
-```
-
-대상 4개 측정소(오창읍, 복대동, 오송읍, 용암동)의 stationName과 좌표를 확인한다.
-매칭이 안 되는 측정소가 있으면 `docs/stations.md`와 `src/config.py`를 갱신한다.
-
-### 4. 1회 수집 실행
-
-```bash
+# 3. 1회 수집
 uv run python scripts/collect_once.py
+
+# 4. 대시보드 실행
+uv run streamlit run dashboard/app.py
 ```
 
-성공 시 `src/storage/data.db`에 측정 데이터가 저장된다.
-
-### 5. 저장 데이터 확인
+### 테스트
 
 ```bash
-uv run python -c "from src.storage.database import query_all; rows = query_all(); print(f'총 {len(rows)}건'); [print(r) for r in rows[:10]]"
+uv run pytest -q   # 60건 통과
 ```
 
-## 프로젝트 구조
+---
 
-```
-src/
-├── config.py              # 환경 변수 로드/검증
-├── collectors/
-│   └── airkorea.py        # 에어코리아 OpenAPI 클라이언트
-└── storage/
-    ├── models.py          # SQLModel 스키마
-    └── database.py        # DB 초기화·CRUD
-scripts/
-├── check_stations.py        # 측정소 정보 검증
-├── collect_once.py          # 수집→저장 1회 실행
-└── analyze_capability.py    # Cp/Cpk 분석 리포트
-src/analysis/
-├── usl_lsl.py               # 환경기준 USL/LSL 상수
-└── capability.py            # 공정능력지수 계산
-flows/
-└── collect_flow.py          # Prefect 수집 워크플로우
-docs/
-├── stations.md              # 측정소 정의 문서
-└── PHASE2_HANDOFF.md        # Phase 2 진입 메모
-.claude/agents/              # 서브에이전트 정의 5종
-```
+## 📚 상세 문서
 
-## Prefect 스케줄링으로 데이터 자동 누적
+| 문서 | 내용 |
+|------|------|
+| [`README_PROJECT.md`](README_PROJECT.md) | 프로젝트 배경·가설·Phase 계획 |
+| [`docs/stations.md`](docs/stations.md) | 4개 측정소 정의 |
+| [`docs/PHASE2_HANDOFF.md`](docs/PHASE2_HANDOFF.md) | Phase 진행 컨텍스트 |
+| [`docs/GITHUB_ACTIONS_SETUP.md`](docs/GITHUB_ACTIONS_SETUP.md) | 자동 수집 설정 가이드 |
+| [`docs/STREAMLIT_CLOUD_DEPLOY.md`](docs/STREAMLIT_CLOUD_DEPLOY.md) | 라이브 데모 배포 가이드 |
+| [`docs/PREFECT_SETUP.md`](docs/PREFECT_SETUP.md) | (대안) 로컬 Prefect 운영 |
 
-**1회 실행 (디버깅용)**:
-```bash
-uv run python flows/collect_flow.py
-```
+---
 
-**자동 수집 옵션 비교**:
+## 📊 진행 상태
 
-| 방식 | 컴퓨터 꺼져도? | 설정 난이도 | 가이드 |
-|------|--------------|------------|------|
-| ⭐ **GitHub Actions** (권장) | ✅ | 쉬움 (Secret 등록만) | [`docs/GITHUB_ACTIONS_SETUP.md`](docs/GITHUB_ACTIONS_SETUP.md) |
-| Prefect 정식 서버 (로컬) | ❌ | 중간 (터미널 3개) | [`docs/PREFECT_SETUP.md`](docs/PREFECT_SETUP.md) |
+- [x] **Phase 1**: 수집 + SQLite 저장 + 단위 테스트 38건
+- [x] **Phase 2 (일부)**: Cp/Cpk 계산 + USL/LSL 환경기준 + 테스트 22건
+- [x] **Phase 3 (일부)**: GitHub Actions 자동화, Streamlit 5페이지, Prefect flow
+- [ ] **Phase 2 잔여**: Western Electric Rules, EWMA/CUSUM, IsolationForest, ANOVA
+- [ ] **Phase 3 잔여**: Streamlit Cloud 배포, Discord Webhook 알림
+- [ ] **Phase 4** (선택): 기상청 API 결합, 풍향 회귀 분석
+- [ ] **최종 산출물**: DMAIC 분석 보고서 (PDF)
 
-**GitHub Actions 자동 수집 워크플로우** (`.github/workflows/collect.yml`):
-- 매시 :15 UTC에 GitHub 서버가 자동 실행
-- 결과 DB는 레포에 자동 commit → 컴퓨터 안 켜도 영구 누적
-- 무료 (public repo 무제한)
-- 사용자가 할 일: GitHub repo 생성 → `AIRKOREA_API_KEY` Secret 등록 → push
+---
 
-> ⚠️ Prefect `flow.serve()`만으로는 **스케줄러가 동작하지 않습니다** (Prefect 3 ephemeral 서버 한계). 매시 cron을 로컬에서 돌리려면 `prefect server start`가 별도로 필요합니다.
+## 📝 라이선스
 
-## Cp/Cpk 분석
-
-```bash
-# 누적 데이터가 측정소당 30건 이상일 때부터 의미 있는 결과
-uv run python scripts/analyze_capability.py            # daily USL
-uv run python scripts/analyze_capability.py --basis hourly
-uv run python scripts/analyze_capability.py --basis annual
-```
-
-## Phase 진행 상태
-
-- [x] **Phase 1**: 수집 + SQLite 저장
-- [~] **Phase 2**: SPC 분석 (Cp/Cpk 완료, 관리도/WE Rules/이상탐지 예정)
-- [~] **Phase 3**: Prefect 스케줄 완료. Streamlit 대시보드 + Discord 알림 예정
-- [ ] **Phase 4**: 기상 데이터 결합 + 회귀 분석 (선택)
+MIT
