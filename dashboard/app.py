@@ -19,11 +19,16 @@ import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
 from dashboard._lib import (  # noqa: E402
+    GRADE_BG_GRADIENT,
     GRADE_COLORS,
     GRADE_LABELS,
+    STATION_DESC,
+    fmt_kst,
     load_dataframe,
     page_header,
     render_data_status,
+    render_footer,
+    render_sidebar,
 )
 
 # 페이지 설정 (반드시 첫 streamlit 호출이어야 함)
@@ -34,28 +39,23 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+df = load_dataframe()
+render_sidebar(df)
+
 page_header(
     "🌬️",
     "충북권 산업단지 대기질 모니터링",
     "오창과학·청주산업·오송바이오 + 용암동 베이스라인 — SPC 기반 자동 수집·분석",
 )
 
-df = load_dataframe()
 render_data_status(df)
 st.divider()
 
 # ----------------------------------------------------------------------
-# 측정소별 최신 카드
+# 측정소별 최신 카드 (등급별 그라데이션 + 측정 시각)
 # ----------------------------------------------------------------------
 st.subheader("📍 측정소별 최신 측정값")
-
 TARGET_STATIONS = ("오창읍", "복대동", "오송읍", "용암동")
-STATION_DESC = {
-    "오창읍": "오창과학산업단지 (이차전지·반도체)",
-    "복대동": "청주산업단지 (전자·화학)",
-    "오송읍": "오송생명과학단지 (바이오·제약)",
-    "용암동": "도시 베이스라인 (거주지)",
-}
 
 if df.empty:
     st.warning("아직 데이터가 없습니다.")
@@ -65,43 +65,59 @@ else:
         sub = df[df["station_name"] == station]
         if sub.empty:
             with col:
-                st.metric(station, "데이터 없음")
+                st.markdown(
+                    f"""
+                    <div style="padding:14px;border-radius:8px;
+                                background:rgba(150,150,150,0.1);
+                                border:1px dashed #888;">
+                        <div style="font-size:1.1rem;font-weight:700;">{station}</div>
+                        <div style="font-size:0.78rem;color:#999;margin-bottom:8px;">
+                            {STATION_DESC[station]}
+                        </div>
+                        <div style="font-size:1.5rem;color:#888;">데이터 없음</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
                 continue
+
         latest = sub.sort_values("data_time").iloc[-1]
         grade = latest.get("khai_grade")
         grade_label = (
-            GRADE_LABELS.get(int(grade), "—")
-            if pd.notna(grade)
-            else "—"
+            GRADE_LABELS.get(int(grade), "—") if pd.notna(grade) else "—"
         )
         grade_color = (
-            GRADE_COLORS.get(int(grade), "#888")
+            GRADE_COLORS.get(int(grade), "#888") if pd.notna(grade) else "#888"
+        )
+        bg = (
+            GRADE_BG_GRADIENT.get(int(grade), "rgba(150,150,150,0.05)")
             if pd.notna(grade)
-            else "#888"
+            else "rgba(150,150,150,0.05)"
         )
 
         with col:
             st.markdown(
                 f"""
-                <div style="border-left:6px solid {grade_color};
-                            padding:12px 16px;
-                            border-radius:6px;
-                            background:rgba(255,255,255,0.03);">
+                <div style="padding:14px;border-radius:8px;
+                            background:{bg};
+                            border-left:6px solid {grade_color};">
                     <div style="font-size:1.1rem;font-weight:700;">{station}</div>
-                    <div style="font-size:0.78rem;color:#999;margin-bottom:8px;">
+                    <div style="font-size:0.78rem;color:#888;margin-bottom:6px;">
                         {STATION_DESC[station]}
                     </div>
-                    <div style="font-size:2.2rem;font-weight:700;color:{grade_color};">
+                    <div style="font-size:2rem;font-weight:800;color:{grade_color};line-height:1.1;">
                         {grade_label}
                     </div>
-                    <div style="font-size:0.85rem;color:#bbb;">
-                        통합대기지수 KHAI = {latest['khai'] if pd.notna(latest['khai']) else '—'}
+                    <div style="font-size:0.85rem;color:#999;margin-top:4px;">
+                        KHAI {latest['khai'] if pd.notna(latest['khai']) else '—'}
+                    </div>
+                    <div style="font-size:0.72rem;color:#aaa;margin-top:8px;">
+                        🕐 {fmt_kst(latest['data_time'])}
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-            # 표시용 측정값 표
             display_rows = []
             for key, label in [
                 ("pm10", "PM10"),
@@ -122,23 +138,28 @@ else:
             )
 
             if pd.notna(latest.get("flag")) and latest["flag"]:
-                st.caption(f"⚠️ flag: {latest['flag']}")
+                st.caption(f"⚠️ 결측 사유: {latest['flag']}")
 
 st.divider()
 
 # ----------------------------------------------------------------------
-# 사용 안내
+# 페이지 안내
 # ----------------------------------------------------------------------
 st.subheader("📚 페이지 안내")
-st.markdown(
-    """
-좌측 사이드바에서 다음 페이지로 이동할 수 있습니다.
+col_a, col_b = st.columns(2)
+with col_a:
+    st.markdown(
+        """
+- **📊 수집 모니터링** — 시간대별 수집 카운트, 24h 성공률, GHA 이력
+- **🌬️ 실시간 측정값** — 측정소·지표 시계열 + 환경기준선 표시
+        """
+    )
+with col_b:
+    st.markdown(
+        """
+- **📐 공정능력 분석** — Cp/Cpk 매트릭스(색상 코딩) + 게이지
+- **🏭 단지 비교** — 산단 영향군 vs 베이스라인 통계 검증
+        """
+    )
 
-- **📊 수집 모니터링** — 시간대별 수집 카운트, GitHub Actions 누적 추이
-- **🌬️ 실시간 측정값** — 측정소·지표별 시계열 차트 (Plotly)
-- **📐 공정능력 분석** — Cp/Cpk 게이지 (표본 ≥30 충족 시)
-- **🏭 단지 비교** — 4개 측정소 통계 비교 (Boxplot, 평균·표준편차 표)
-
-데이터는 매시 GitHub Actions가 자동 수집합니다. 컴퓨터를 꺼도 누적됩니다.
-"""
-)
+render_footer()

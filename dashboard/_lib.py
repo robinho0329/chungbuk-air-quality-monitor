@@ -1,12 +1,12 @@
 """대시보드 공통 헬퍼.
 
-여러 페이지에서 재사용하는 데이터 로드·캐싱·스타일 유틸.
+여러 페이지에서 재사용하는 데이터 로드·캐싱·스타일 유틸 + 사이드바·푸터 컴포넌트.
 """
 
 from __future__ import annotations
 
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # 프로젝트 루트를 sys.path에 추가 (streamlit run dashboard/app.py 대응)
@@ -19,6 +19,12 @@ import streamlit as st  # noqa: E402
 
 from src.storage.database import query_all  # noqa: E402
 
+# ----------------------------------------------------------------------
+# 시간대 / 라벨 상수
+# ----------------------------------------------------------------------
+KST = timezone(timedelta(hours=9))
+LIVE_DEMO_URL = "https://chungbuk-air-quality-monitor-dfusndrdtukcwk9rog6wzt.streamlit.app/"
+GITHUB_URL = "https://github.com/robinho0329/chungbuk-air-quality-monitor"
 
 # 등급별 색상 (대기환경 표준)
 GRADE_COLORS: dict[int, str] = {
@@ -26,6 +32,14 @@ GRADE_COLORS: dict[int, str] = {
     2: "#2ca02c",  # 보통 (초록)
     3: "#ff7f0e",  # 나쁨 (주황)
     4: "#d62728",  # 매우나쁨 (빨강)
+}
+
+# 등급별 배경 그라데이션 (홈 카드용)
+GRADE_BG_GRADIENT: dict[int, str] = {
+    1: "linear-gradient(135deg, rgba(31,119,180,0.25), rgba(31,119,180,0.05))",
+    2: "linear-gradient(135deg, rgba(44,160,44,0.25), rgba(44,160,44,0.05))",
+    3: "linear-gradient(135deg, rgba(255,127,14,0.25), rgba(255,127,14,0.05))",
+    4: "linear-gradient(135deg, rgba(214,39,40,0.25), rgba(214,39,40,0.05))",
 }
 
 GRADE_LABELS: dict[int, str] = {
@@ -44,13 +58,65 @@ POLLUTANT_DISPLAY: dict[str, str] = {
     "co": "일산화탄소 CO (ppm)",
 }
 
+# 단지 그룹화 (가설 검증용)
+STATION_GROUPS: dict[str, str] = {
+    "오창읍": "산단 영향군",
+    "복대동": "산단 영향군",
+    "오송읍": "산단 영향군",
+    "용암동": "베이스라인",
+}
 
+STATION_DESC: dict[str, str] = {
+    "오창읍": "오창과학단지 (이차전지·반도체)",
+    "복대동": "청주산업단지 (전자·화학)",
+    "오송읍": "오송생명과학단지 (바이오·제약)",
+    "용암동": "도시 베이스라인 (거주지)",
+}
+
+
+# ----------------------------------------------------------------------
+# 시간 포맷
+# ----------------------------------------------------------------------
+def fmt_kst(dt: datetime | pd.Timestamp | None, with_tz: bool = True) -> str:
+    """datetime을 KST 문자열로 변환.
+
+    DB의 data_time/created_at은 모두 KST 기반(에어코리아 응답이 KST이고
+    GHA runner가 보낸 시각도 우리는 KST로 가정)이지만 tzinfo가 None이라
+    여기서 명시적으로 KST 라벨을 붙인다.
+    """
+    if dt is None or (isinstance(dt, float) and pd.isna(dt)):
+        return "—"
+    if isinstance(dt, pd.Timestamp):
+        dt = dt.to_pydatetime()
+    s = dt.strftime("%Y-%m-%d %H:%M")
+    return f"{s} KST" if with_tz else s
+
+
+def now_kst() -> datetime:
+    """현재 KST 시각."""
+    return datetime.now(tz=KST)
+
+
+def next_cron_eta_kst() -> str:
+    """다음 GitHub Actions 자동 수집 예정 시각 (KST). 매시 :24-:30 KST 추정."""
+    now = now_kst()
+    # GHA cron이 매시 :15 UTC(:24 KST보다 약간 빠름). 실제 평균 지연 감안 :24-:30
+    base_minute = 24
+    if now.minute < base_minute:
+        eta = now.replace(minute=base_minute, second=0, microsecond=0)
+    else:
+        eta = (now + timedelta(hours=1)).replace(
+            minute=base_minute, second=0, microsecond=0
+        )
+    return eta.strftime("%H:%M KST")
+
+
+# ----------------------------------------------------------------------
+# 데이터 로드 (캐시)
+# ----------------------------------------------------------------------
 @st.cache_data(ttl=60, show_spinner=False)
 def load_dataframe() -> pd.DataFrame:
-    """전체 측정 데이터를 DataFrame으로 로드한다 (60초 캐시).
-
-    Streamlit 캐시 덕분에 페이지 전환·재실행 시 DB 호출 최소화.
-    """
+    """전체 측정 데이터를 DataFrame으로 로드한다 (60초 캐시)."""
     rows = query_all()
     if not rows:
         return pd.DataFrame()
@@ -73,14 +139,52 @@ def load_dataframe() -> pd.DataFrame:
         }
         for r in rows
     ]
-    return pd.DataFrame.from_records(records)
+    df = pd.DataFrame.from_records(records)
+    df["station_group"] = df["station_name"].map(STATION_GROUPS)
+    return df
 
 
+# ----------------------------------------------------------------------
+# 사이드바 & 푸터 (모든 페이지 공통)
+# ----------------------------------------------------------------------
+def render_sidebar(df: pd.DataFrame | None = None) -> None:
+    """모든 페이지가 공유하는 사이드바 정보."""
+    with st.sidebar:
+        st.markdown("### 🌬️ 충북 대기질 모니터")
+        st.caption("산단 영향 SPC 분석 시스템")
+        st.divider()
+
+        if df is not None and not df.empty:
+            last_time = df["data_time"].max()
+            last_created = df["created_at"].max()
+            st.markdown("**📡 자동 수집 상태**")
+            st.write(f"마지막 측정: `{fmt_kst(last_time)}`")
+            st.write(f"마지막 DB 저장: `{fmt_kst(last_created)}`")
+            st.write(f"다음 자동 수집: `{next_cron_eta_kst()}`")
+            st.divider()
+
+        st.markdown("**🔗 링크**")
+        st.markdown(f"[📂 GitHub 레포]({GITHUB_URL})")
+        st.markdown(f"[🤖 Actions]({GITHUB_URL}/actions)")
+        st.divider()
+        st.caption("매시 GitHub Actions가 자동 수집합니다.\nPC 꺼져 있어도 누적됩니다.")
+
+
+def render_footer() -> None:
+    """모든 페이지 하단 공통 푸터."""
+    st.divider()
+    st.caption(
+        f"⚙️ 매시 :15 UTC ({next_cron_eta_kst()} 예정) GitHub Actions 자동 수집 · "
+        f"[코드]({GITHUB_URL}) · "
+        f"QC/API 직무 포트폴리오 (SPC + 6시그마 DMAIC)"
+    )
+
+
+# ----------------------------------------------------------------------
+# 페이지 헤더 + 데이터 현황
+# ----------------------------------------------------------------------
 def render_data_status(df: pd.DataFrame) -> None:
-    """페이지 상단에 누적 데이터 현황을 안내한다.
-
-    Cp/Cpk 분석을 위한 최소 표본(30)에 대한 진행률 표시.
-    """
+    """페이지 상단에 누적 데이터 현황을 안내한다."""
     if df.empty:
         st.warning(
             "🌬️ 누적 데이터가 없습니다. GitHub Actions 첫 수집이 완료될 때까지 잠시 기다려주세요."
@@ -94,21 +198,18 @@ def render_data_status(df: pd.DataFrame) -> None:
 
     cols = st.columns(4)
     cols[0].metric("총 누적", f"{total:,} 건")
-    cols[1].metric("측정소", f"{stations} 곳")
-    cols[2].metric(
-        "마지막 측정 시각",
-        last_time.strftime("%m-%d %H:%M") if pd.notna(last_time) else "—",
-    )
+    cols[1].metric("측정소", f"{stations} / 4 곳")
+    cols[2].metric("마지막 측정", fmt_kst(last_time, with_tz=False), help="KST 기준")
     cols[3].metric(
-        "Cp/Cpk 준비도",
+        "Cp/Cpk 준비",
         f"{int(progress * 100)}%",
         help=f"가장 적은 측정소 기준 {min_per_station}/30건",
     )
 
     if min_per_station < 30:
         st.info(
-            f"📈 Cp/Cpk 분석은 측정소당 최소 30건 필요합니다. "
-            f"현재 최소 {min_per_station}건. 매시 자동 누적 중 (GitHub Actions)."
+            f"📈 Cp/Cpk 분석은 측정소당 30건 이상에서 의미가 있습니다 "
+            f"(현재 최소 {min_per_station}건). GitHub Actions가 매시 자동 누적 중."
         )
 
 
@@ -117,3 +218,49 @@ def page_header(emoji: str, title: str, description: str = "") -> None:
     st.title(f"{emoji} {title}")
     if description:
         st.caption(description)
+
+
+# ----------------------------------------------------------------------
+# 24h 수집 성공률 KPI
+# ----------------------------------------------------------------------
+def compute_24h_success_rate(df: pd.DataFrame) -> tuple[int, int, float]:
+    """최근 24시간 측정소별 수집 성공률.
+
+    Returns:
+        (받은 시각 수, 기대 시각 수, 성공률).
+        기대 시각 수 = 24 × 4 측정소.
+    """
+    if df.empty:
+        return 0, 24 * 4, 0.0
+    now = now_kst().replace(tzinfo=None)  # df의 datetime은 naive
+    since = now - timedelta(hours=24)
+    df_24h = df[df["data_time"] >= since]
+    received = len(df_24h)
+    expected = 24 * 4
+    rate = received / expected if expected > 0 else 0.0
+    return received, expected, rate
+
+
+# ----------------------------------------------------------------------
+# Cpk 셀 색상 (Pandas Styler)
+# ----------------------------------------------------------------------
+def color_cpk_cell(val: str) -> str:
+    """Cpk 매트릭스 셀 배경색.
+
+    'n=N' 또는 '기준없음' 같은 비-수치 값은 회색.
+    수치는 5단계 색상 매핑.
+    """
+    try:
+        cpk = float(val)
+    except (TypeError, ValueError):
+        return "background-color: #2b2b2b; color: #999;"
+
+    if cpk < 0:
+        return "background-color: rgba(214,39,40,0.6); color: white; font-weight:700;"
+    if cpk < 1.0:
+        return "background-color: rgba(255,127,14,0.6); color: white; font-weight:700;"
+    if cpk < 1.33:
+        return "background-color: rgba(255,215,0,0.5); color: black;"
+    if cpk < 1.67:
+        return "background-color: rgba(144,238,144,0.5); color: black;"
+    return "background-color: rgba(44,160,44,0.6); color: white; font-weight:700;"

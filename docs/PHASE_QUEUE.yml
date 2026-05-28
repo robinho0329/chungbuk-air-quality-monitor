@@ -1,0 +1,101 @@
+# Phase 작업 큐 - 매일 KST 09:15 자율 개발 루프가 참조
+# 우선순위: ★★★ (즉시) > ★★ (다음) > ★ (시간 여유)
+# 상태: pending / in_progress / completed / blocked
+
+phases:
+  - phase: 2
+    items:
+      - id: WE_RULES
+        title: Western Electric 8 Rules 자동 판정
+        priority: 3
+        status: pending
+        depends_on: [DATA_30_PER_STATION]
+        deliverables:
+          - src/analysis/western_electric.py
+          - tests/test_western_electric.py
+          - dashboard 페이지에 룰 위반 표시
+
+      - id: CONTROL_CHART
+        title: EWMA/CUSUM/X-bar 관리도 데이터 생성
+        priority: 3
+        status: pending
+        depends_on: []
+        deliverables:
+          - src/analysis/control_chart.py
+          - tests/test_control_chart.py
+          - dashboard "관리도" 페이지
+
+      - id: HYPOTHESIS_TEST
+        title: t-test/ANOVA 단지 비교 통계 검정
+        priority: 3
+        status: pending
+        depends_on: [DATA_30_PER_STATION]
+        deliverables:
+          - src/analysis/hypothesis_test.py (scipy 활용)
+          - dashboard 4번 페이지에 p-value 표시
+
+      - id: ISOLATION_FOREST
+        title: IsolationForest 다변량 이상 탐지
+        priority: 2
+        status: pending
+        depends_on: [DATA_50_PER_STATION]
+        deliverables:
+          - src/analysis/anomaly.py (sklearn IsolationForest)
+          - tests/test_anomaly.py
+
+  - phase: 3
+    items:
+      - id: DISCORD_ALERT
+        title: Discord Webhook 알림 (Cpk 임계 미달/룰 위반)
+        priority: 2
+        status: pending
+        depends_on: [WE_RULES]
+        deliverables:
+          - src/notifier/discord.py
+          - flows/alert_flow.py
+          - GHA workflow에 알림 단계 추가
+
+      - id: DMAIC_REPORT
+        title: DMAIC 분석 보고서 자동 생성 (PDF)
+        priority: 3
+        status: pending
+        depends_on: [DATA_500, WE_RULES, HYPOTHESIS_TEST]
+        deliverables:
+          - scripts/generate_dmaic_report.py
+          - reports/dmaic/YYYY-MM-DD.pdf
+          - reportlab 또는 weasyprint 활용
+
+  - phase: 4
+    items:
+      - id: WEATHER_API
+        title: 기상청 API 결합 + 풍향 회귀 분석
+        priority: 1
+        status: pending
+        depends_on: [DATA_1000]
+        deliverables:
+          - src/collectors/weather.py
+          - src/analysis/wind_regression.py
+
+# 데이터 충분도 마일스톤
+data_milestones:
+  DATA_30_PER_STATION:
+    description: 측정소당 30건 이상 누적 (Cp/Cpk 최소 표본)
+    eta_hours: 30
+  DATA_50_PER_STATION:
+    description: 측정소당 50건 이상
+    eta_hours: 50
+  DATA_500:
+    description: 총 500건 이상 (한 달 약간 못 미치는 양)
+    eta_hours: 125
+  DATA_1000:
+    description: 총 1000건 이상
+    eta_hours: 250
+
+# 매일 자율 루프에서 자동으로 수행하는 작업
+daily_auto_tasks:
+  - run_pytest: 60건 회귀 테스트
+  - report_accumulation: 누적 데이터 통계
+  - report_24h_health: 최근 24시간 수집 성공률
+  - report_cpk_matrix: 가능한 측정소·지표 조합 Cpk 산출
+  - report_milestone_progress: 다음 마일스톤까지 남은 시간
+  - report_next_phase_items: 큐에서 다음 후보 작업 목록 안내

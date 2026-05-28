@@ -1,0 +1,68 @@
+name: 🤖 데일리 자율 개발 루프
+
+# EPL 프로젝트 daily_dev_loop 패턴 차용.
+# 매일 KST 09:15 (UTC 00:15)에 GitHub Actions가 자동 실행:
+#   - pytest 회귀 테스트
+#   - 누적 데이터 통계 리포트
+#   - 24h 수집 성공률
+#   - Cp/Cpk 매트릭스
+#   - 마일스톤 진행률
+#   - 다음 후보 작업 (PHASE_QUEUE.yml)
+# 결과는 reports/daily/YYYY-MM-DD.md + reports/daily/latest.md로 commit·push.
+
+on:
+  schedule:
+    # KST 09:15 = UTC 00:15. GitHub Actions cron은 보통 5~15분 지연됨.
+    - cron: '15 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-dev-loop
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 레포 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 🚀 uv 설치
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: 🐍 Python 3.14 설치 (uv)
+        run: uv python install 3.14
+
+      - name: 📦 의존성 설치
+        run: uv sync --frozen
+
+      - name: 🤖 데일리 루프 실행 (pytest + 통계 + 리포트)
+        env:
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: "utf-8"
+          # 수집은 안 하지만 collectors 모듈이 import 될 가능성 대비
+          AIRKOREA_API_KEY: ${{ secrets.AIRKOREA_API_KEY }}
+        run: uv run python scripts/daily_dev_loop.py
+
+      - name: 📤 리포트 자동 commit & push
+        run: |
+          git config user.email "daily-loop@github-actions"
+          git config user.name "Daily Dev Loop Bot"
+          git add reports/daily/
+          if git diff --staged --quiet; then
+            echo "리포트 변경 없음 — 커밋 스킵"
+          else
+            TS=$(date -u +'%Y-%m-%d')
+            git commit -m "auto(daily): dev loop report ${TS}"
+            git pull --rebase --autostash origin main 2>/dev/null || true
+            git push origin main
+          fi

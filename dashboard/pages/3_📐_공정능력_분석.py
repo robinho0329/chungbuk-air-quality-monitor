@@ -1,4 +1,4 @@
-"""공정능력(Cp/Cpk) 분석 페이지."""
+"""공정능력(Cp/Cpk) 분석 페이지: 색상 코딩 매트릭스 + 게이지."""
 
 from __future__ import annotations
 
@@ -15,9 +15,12 @@ import streamlit as st  # noqa: E402
 
 from dashboard._lib import (  # noqa: E402
     POLLUTANT_DISPLAY,
+    color_cpk_cell,
     load_dataframe,
     page_header,
     render_data_status,
+    render_footer,
+    render_sidebar,
 )
 from src.analysis.capability import (  # noqa: E402
     InsufficientSampleError,
@@ -27,17 +30,19 @@ from src.analysis.capability import (  # noqa: E402
 from src.analysis.usl_lsl import SPEC_LIMITS  # noqa: E402
 
 st.set_page_config(page_title="공정능력 분석", page_icon="📐", layout="wide")
+df = load_dataframe()
+render_sidebar(df)
+
 page_header(
     "📐",
     "공정능력 분석 (Cp / Cpk)",
     "대기환경보전법 환경기준을 USL로 사용. 표본 ≥ 30 충족 시 산출.",
 )
-
-df = load_dataframe()
 render_data_status(df)
 st.divider()
 
 if df.empty:
+    render_footer()
     st.stop()
 
 # ----------------------------------------------------------------------
@@ -62,7 +67,7 @@ selected_stations = col2.multiselect(
 st.divider()
 
 # ----------------------------------------------------------------------
-# 측정소 × 오염물질 매트릭스
+# 측정소 × 오염물질 매트릭스 (색상 코딩)
 # ----------------------------------------------------------------------
 st.subheader("🎯 측정소 × 오염물질 Cpk 매트릭스")
 pollutants = list(POLLUTANT_DISPLAY.keys())
@@ -74,7 +79,6 @@ for station in selected_stations:
         spec = SPEC_LIMITS[p]
         usl = spec.usl_for(basis)
         if usl is None:
-            # 폴백: daily → annual → hourly
             for fb in ("daily", "annual", "hourly"):
                 usl = spec.usl_for(fb)
                 if usl is not None:
@@ -92,19 +96,22 @@ for station in selected_stations:
             row[p.upper()] = "오류"
     matrix_rows.append(row)
 
-matrix_df = pd.DataFrame(matrix_rows).set_index("측정소")
-st.dataframe(matrix_df, use_container_width=True)
+if matrix_rows:
+    matrix_df = pd.DataFrame(matrix_rows).set_index("측정소")
+    # Pandas Styler로 셀 색상 적용
+    styled = matrix_df.style.map(color_cpk_cell)
+    st.dataframe(styled, use_container_width=True)
 
 st.caption(
-    "📌 값 해석: 음수=규격이탈 / <1.0=불량위험 / <1.33=마진부족 / "
-    "<1.67=양호 / ≥1.67=우수 (6시그마 수준)  ·  "
-    f"'n=N'은 표본 부족 (최소 {MIN_SAMPLE_SIZE}건)"
+    "📌 **색상 해석**: 🔴 음수 (규격이탈) · 🟠 < 1.0 (불량 위험) · "
+    "🟡 1.0~1.33 (마진 부족) · 🟢 1.33~1.67 (양호) · 🟢🟢 ≥ 1.67 (우수 / 6σ)"
 )
+st.caption(f"'n=N'은 표본 부족 (최소 {MIN_SAMPLE_SIZE}건 필요), '기준없음'은 해당 basis USL 미정의")
 
 st.divider()
 
 # ----------------------------------------------------------------------
-# 게이지 차트 (선택된 측정소·오염물질)
+# 게이지 차트
 # ----------------------------------------------------------------------
 st.subheader("🎛️ 개별 게이지 보기")
 c1, c2 = st.columns(2)
@@ -128,7 +135,6 @@ if usl is None:
 values_g = sub_g[gauge_pollutant].dropna()
 try:
     res = compute_capability(values_g, usl=usl or 1.0, lsl=0.0)
-    # Plotly 게이지
     fig = go.Figure(
         go.Indicator(
             mode="gauge+number",
@@ -136,7 +142,7 @@ try:
             domain={"x": [0, 1], "y": [0, 1]},
             title={
                 "text": f"{gauge_station} · {POLLUTANT_DISPLAY[gauge_pollutant]}<br>"
-                        f"<span style='font-size:0.8em;color:#888'>Cpk · {res.interpret_cpk()}</span>"
+                f"<span style='font-size:0.8em;color:#888'>Cpk · {res.interpret_cpk()}</span>"
             },
             gauge={
                 "axis": {"range": [-1, 3]},
@@ -159,13 +165,14 @@ try:
     fig.update_layout(height=400)
     st.plotly_chart(fig, use_container_width=True)
 
-    # 상세 수치
     col_a, col_b, col_c, col_d = st.columns(4)
     col_a.metric("표본 수", f"{res.n}")
     col_b.metric("평균 μ", f"{res.mean:.3f}")
     col_c.metric("표준편차 σ", f"{res.std:.3f}")
     col_d.metric("Cpk", f"{res.cpk:.3f}", help=res.interpret_cpk())
-    st.caption(f"USL={res.usl}, LSL={res.lsl}, Cp={res.cp:.3f}, CPU={res.cpu:.3f}, CPL={res.cpl:.3f}")
+    st.caption(
+        f"USL={res.usl}, LSL={res.lsl}, Cp={res.cp:.3f}, CPU={res.cpu:.3f}, CPL={res.cpl:.3f}"
+    )
 except InsufficientSampleError:
     st.warning(
         f"표본 부족: 현재 {len(values_g)}건. "
@@ -174,3 +181,5 @@ except InsufficientSampleError:
     )
 except ValueError as e:
     st.error(f"계산 불가: {e}")
+
+render_footer()
