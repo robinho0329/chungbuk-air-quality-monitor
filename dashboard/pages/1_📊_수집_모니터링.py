@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
-import pandas as pd
-import plotly.express as px
-import streamlit as st
+import sys
+from pathlib import Path
 
-from dashboard._lib import load_dataframe, page_header, render_data_status
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+import pandas as pd  # noqa: E402
+import plotly.express as px  # noqa: E402
+import streamlit as st  # noqa: E402
+
+from dashboard._lib import load_dataframe, page_header, render_data_status  # noqa: E402
 
 st.set_page_config(page_title="수집 모니터링", page_icon="📊", layout="wide")
 page_header(

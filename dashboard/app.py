@@ -6,10 +6,19 @@
 
 from __future__ import annotations
 
-import pandas as pd
-import streamlit as st
+import sys
+from pathlib import Path
 
-from dashboard._lib import (
+# streamlit은 실행 파일 디렉토리만 sys.path에 추가하므로
+# 프로젝트 루트를 명시적으로 추가해야 `dashboard._lib` import 가능
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+import pandas as pd  # noqa: E402
+import streamlit as st  # noqa: E402
+
+from dashboard._lib import (  # noqa: E402
     GRADE_COLORS,
     GRADE_LABELS,
     load_dataframe,

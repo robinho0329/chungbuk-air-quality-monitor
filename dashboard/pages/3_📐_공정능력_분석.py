@@ -2,22 +2,29 @@
 
 from __future__ import annotations
 
-import pandas as pd
-import plotly.graph_objects as go
-import streamlit as st
+import sys
+from pathlib import Path
 
-from dashboard._lib import (
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+import pandas as pd  # noqa: E402
+import plotly.graph_objects as go  # noqa: E402
+import streamlit as st  # noqa: E402
+
+from dashboard._lib import (  # noqa: E402
     POLLUTANT_DISPLAY,
     load_dataframe,
     page_header,
     render_data_status,
 )
-from src.analysis.capability import (
+from src.analysis.capability import (  # noqa: E402
     InsufficientSampleError,
     MIN_SAMPLE_SIZE,
     compute_capability,
 )
-from src.analysis.usl_lsl import SPEC_LIMITS
+from src.analysis.usl_lsl import SPEC_LIMITS  # noqa: E402
 
 st.set_page_config(page_title="공정능력 분석", page_icon="📐", layout="wide")
 page_header(

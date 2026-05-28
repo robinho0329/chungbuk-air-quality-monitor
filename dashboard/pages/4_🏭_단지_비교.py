@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
-import pandas as pd
-import plotly.express as px
-import streamlit as st
+import sys
+from pathlib import Path
 
-from dashboard._lib import (
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+import pandas as pd  # noqa: E402
+import plotly.express as px  # noqa: E402
+import streamlit as st  # noqa: E402
+
+from dashboard._lib import (  # noqa: E402
     POLLUTANT_DISPLAY,
     load_dataframe,
     page_header,
