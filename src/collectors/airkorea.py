@@ -36,9 +36,11 @@ from src.config import AIRKOREA_API_KEY
 from src.storage.models import AirQualityMeasurement
 
 # 에어코리아 OpenAPI Base URL
-_BASE_URL = "http://apis.data.go.kr/B552584"
+_BASE_URL = "https://apis.data.go.kr/B552584"
 _ENDPOINT_STATION_INFO = f"{_BASE_URL}/MsrstnInfoInqireSvc/getMsrstnList"
-_ENDPOINT_SIDO_REALTIME = f"{_BASE_URL}/ArpltnInfoInqireSvc/getCtprvnRltmMesureDnsty"
+# 주의: 시도별 실시간 측정정보 엔드포인트는 'ArpltnInforInqireSvc' (Info가 아니라 Infor).
+# 2026-05-28 공공데이터활용지원센터 답변 확인.
+_ENDPOINT_SIDO_REALTIME = f"{_BASE_URL}/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty"
 
 # 재시도 설정
 _MAX_RETRIES = 3
