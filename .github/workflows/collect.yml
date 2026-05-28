@@ -1,0 +1,77 @@
+name: 🌬️ 충북 대기질 자동 수집
+
+# 컴퓨터 꺼져있어도 GitHub 서버에서 매시 자동 실행.
+# 결과 SQLite DB는 레포에 자동 커밋되어 영속 저장.
+
+on:
+  schedule:
+    # 매시 15분 UTC.
+    # 에어코리아 데이터가 정각 후 5~10분에 갱신되므로 15분 후 호출.
+    # GitHub Actions cron은 5~15분 지연이 흔하니 큰 정확도는 기대하지 말 것.
+    - cron: '15 * * * *'
+  workflow_dispatch:  # GitHub UI에서 수동 실행 버튼
+
+permissions:
+  contents: write  # 결과 DB 커밋 & push 권한
+
+# 동시 실행 방지: 이전 run이 끝나기 전에 새 cron이 떠도 큐에 안 쌓이게.
+concurrency:
+  group: airkorea-collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 레포 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 🚀 uv 설치
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: 🐍 Python 3.14 설치 (uv)
+        run: uv python install 3.14
+
+      - name: 📦 의존성 설치
+        run: uv sync --frozen
+
+      - name: 🌬️ 에어코리아 1회 수집 실행
+        env:
+          AIRKOREA_API_KEY: ${{ secrets.AIRKOREA_API_KEY }}
+          AIRKOREA_API_KEY_ENCODED: ${{ secrets.AIRKOREA_API_KEY }}
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: "utf-8"
+        run: uv run python scripts/collect_once.py
+
+      - name: 📊 누적 카운트 출력
+        run: |
+          uv run python -c "
+          from collections import Counter
+          from src.storage.database import query_all
+          rows = query_all()
+          print(f'총 {len(rows)}건 누적')
+          for k, v in Counter(r.station_name for r in rows).items():
+              print(f'  {k}: {v}건')
+          " || true
+
+      - name: 📤 DB 변경 시 커밋 & 푸시
+        run: |
+          git config user.email "airkorea-bot@github-actions"
+          git config user.name "Airkorea Collect Bot"
+          git add src/storage/data.db
+          if git diff --staged --quiet; then
+            echo "DB 변경 없음 — 커밋 스킵 (중복 데이터로 INSERT OR IGNORE된 케이스)"
+          else
+            TS=$(date -u +'%Y-%m-%dT%H:%MZ')
+            COUNT=$(uv run python -c "from src.storage.database import query_all; print(len(query_all()))" 2>/dev/null || echo "?")
+            git commit -m "auto(collect): airkorea snapshot ${TS} (누적 ${COUNT}건)"
+            # 동시 push 충돌 방지
+            git pull --rebase --autostash origin main 2>/dev/null || true
+            git push origin main
+          fi

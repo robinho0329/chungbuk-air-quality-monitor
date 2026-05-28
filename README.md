@@ -78,12 +78,20 @@ docs/
 uv run python flows/collect_flow.py
 ```
 
-**매시 5분 자동 실행 (운영급, 정식 서버 + 워커)**:
-설정 절차는 [`docs/PREFECT_SETUP.md`](docs/PREFECT_SETUP.md) 참조.
-3개 터미널을 사용합니다 (server + worker + 검증/UI).
+**자동 수집 옵션 비교**:
 
-> ⚠️ `flow.serve()`만으로는 **스케줄러가 동작하지 않습니다** (Prefect 3 ephemeral 서버 한계).
-> 매시 cron 자동 실행을 원하면 반드시 `prefect server start`를 먼저 띄워야 합니다.
+| 방식 | 컴퓨터 꺼져도? | 설정 난이도 | 가이드 |
+|------|--------------|------------|------|
+| ⭐ **GitHub Actions** (권장) | ✅ | 쉬움 (Secret 등록만) | [`docs/GITHUB_ACTIONS_SETUP.md`](docs/GITHUB_ACTIONS_SETUP.md) |
+| Prefect 정식 서버 (로컬) | ❌ | 중간 (터미널 3개) | [`docs/PREFECT_SETUP.md`](docs/PREFECT_SETUP.md) |
+
+**GitHub Actions 자동 수집 워크플로우** (`.github/workflows/collect.yml`):
+- 매시 :15 UTC에 GitHub 서버가 자동 실행
+- 결과 DB는 레포에 자동 commit → 컴퓨터 안 켜도 영구 누적
+- 무료 (public repo 무제한)
+- 사용자가 할 일: GitHub repo 생성 → `AIRKOREA_API_KEY` Secret 등록 → push
+
+> ⚠️ Prefect `flow.serve()`만으로는 **스케줄러가 동작하지 않습니다** (Prefect 3 ephemeral 서버 한계). 매시 cron을 로컬에서 돌리려면 `prefect server start`가 별도로 필요합니다.
 
 ## Cp/Cpk 분석
 

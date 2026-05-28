@@ -13,7 +13,9 @@ build/
 .env
 
 # Database
-src/storage/data.db
+# 주의: data.db는 GitHub Actions 자동 수집 결과 영속화 목적으로 git에 추적.
+# 로컬 테스트용 임시 DB는 .db-local 등 다른 확장자 사용 권장.
+# src/storage/data.db  ← intentionally NOT ignored
 
 # IDE
 .vscode/
@@ -23,12 +25,14 @@ src/storage/data.db
 Thumbs.db
 .DS_Store
 
-# Data files
-data/
+# Data files (큰 raw 파일은 무시, 단 snapshots/는 추적)
+data/raw/
+data/processed/
+data/features/
 
 # Logs
 logs/
 *.log
 
-# uv
-uv.lock
+# uv: lock은 재현성 위해 추적 (application 권장 사항)
+# uv.lock  ← intentionally NOT ignored
