@@ -1,4 +1,4 @@
-"""4개 측정소 단지 비교: 산단 영향군 vs 베이스라인 가설 검증."""
+"""5개 측정소 단지 비교: 산단 영향군 vs 베이스라인 가설 검증."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ import streamlit as st  # noqa: E402
 
 from dashboard._lib import (  # noqa: E402
     POLLUTANT_DISPLAY,
+    STATION_DESC,
     STATION_GROUPS,
     date_range_filter,
     load_dataframe,
@@ -37,7 +38,7 @@ render_sidebar(df)
 page_header(
     "🏭",
     "단지 간 비교",
-    "**산단 영향군**(오창·복대·오송) vs **베이스라인**(용암동). "
+    "산단 영향군(오창·복대·봉명·오송) vs 베이스라인(용암동). "
     "산단 인근 대기질이 거주지보다 나쁜가? 가설을 검증합니다.",
 )
 render_data_status(df)
@@ -80,12 +81,15 @@ except (InsufficientSampleError, ValueError):
 # 측정소 그룹 안내
 # ----------------------------------------------------------------------
 st.subheader("📌 단지 그룹화")
+# config(STATION_GROUPS)에서 동적 생성 — 측정소 추가/변경 시 자동 반영(stale 방지)
 group_table = pd.DataFrame(
     [
-        {"측정소": "오창읍", "단지": "오창과학단지", "그룹": "🏭 산단 영향군"},
-        {"측정소": "복대동", "단지": "청주산업단지", "그룹": "🏭 산단 영향군"},
-        {"측정소": "오송읍", "단지": "오송생명과학단지", "그룹": "🏭 산단 영향군"},
-        {"측정소": "용암동", "단지": "거주지", "그룹": "🏘️ 베이스라인"},
+        {
+            "측정소": _st,
+            "단지/설명": STATION_DESC.get(_st, "-"),
+            "그룹": ("🏭 " if _grp == INDUSTRIAL_GROUP else "🏘️ ") + _grp,
+        }
+        for _st, _grp in STATION_GROUPS.items()
     ]
 )
 st.dataframe(group_table, hide_index=True, use_container_width=True)

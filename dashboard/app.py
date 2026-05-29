@@ -1,4 +1,4 @@
-"""홈 화면: 4개 측정소 현재 상태 + KPI.
+"""홈 화면: 5개 측정소 현재 상태 + KPI.
 
 실행:
     uv run streamlit run dashboard/app.py
@@ -197,8 +197,9 @@ with col_a:
 with col_b:
     st.markdown(
         """
-- **📐 공정능력 분석** — Cp/Cpk 매트릭스(색상 코딩) + 게이지
-- **🏭 단지 비교** — 산단 영향군 vs 베이스라인 통계 검증
+- **📐 공정능력 분석** — Cp/Cpk 매트릭스 + 게이지 + GIS 지도
+- **🏭 단지 비교** — 산단 영향군 vs 베이스라인 t-test/ANOVA
+- **📈 관리도** — I/EWMA/CUSUM + 자기상관 보정 잔차 관리도
         """
     )
 
