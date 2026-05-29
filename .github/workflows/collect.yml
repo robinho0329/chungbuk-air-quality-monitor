@@ -5,10 +5,12 @@ name: 🌬️ 충북 대기질 자동 수집
 
 on:
   schedule:
-    # 매시 15분 UTC.
-    # 에어코리아 데이터가 정각 후 5~10분에 갱신되므로 15분 후 호출.
-    # GitHub Actions cron은 5~15분 지연이 흔하니 큰 정확도는 기대하지 말 것.
-    - cron: '15 * * * *'
+    # 매시 3회(:07, :27, :47) UTC.
+    # GitHub Actions 스케줄 cron은 best-effort라 부하 시 지연·누락이 흔하다.
+    # 특히 정각(:00) 부근은 전 세계 cron이 몰려 가장 잘 누락되므로 한산한 분(分)을 선택.
+    # 시간당 3회 시도 → 일부 누락돼도 해당 시각 데이터 확보 확률↑.
+    # 에어코리아 원본은 1시간 단위 갱신 + DB는 INSERT OR IGNORE라 중복 삽입은 무해.
+    - cron: '7,27,47 * * * *'
   workflow_dispatch:  # GitHub UI에서 수동 실행 버튼
 
 permissions:

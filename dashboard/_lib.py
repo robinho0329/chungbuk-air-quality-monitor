@@ -101,15 +101,19 @@ def now_kst() -> datetime:
 
 
 def next_cron_eta_kst() -> str:
-    """다음 GitHub Actions 자동 수집 예정 시각 (KST). 매시 :24-:30 KST 추정."""
+    """다음 GitHub Actions 자동 수집 예정 시각 (KST). 매시 :07/:27/:47 시도."""
     now = now_kst()
-    # GHA cron이 매시 :15 UTC(:24 KST보다 약간 빠름). 실제 평균 지연 감안 :24-:30
-    base_minute = 24
-    if now.minute < base_minute:
-        eta = now.replace(minute=base_minute, second=0, microsecond=0)
+    # GHA cron이 매시 3회(:07, :27, :47 UTC = KST 동일 분, 시차는 정수시간).
+    # best-effort 스케줄러라 수 분 지연이 흔하므로 안내값엔 +3분 버퍼.
+    slots = (7, 27, 47)
+    buffered = tuple(m + 3 for m in slots)
+    for minute in buffered:
+        if now.minute < minute:
+            eta = now.replace(minute=minute, second=0, microsecond=0)
+            break
     else:
         eta = (now + timedelta(hours=1)).replace(
-            minute=base_minute, second=0, microsecond=0
+            minute=buffered[0], second=0, microsecond=0
         )
     return eta.strftime("%H:%M KST")
 
