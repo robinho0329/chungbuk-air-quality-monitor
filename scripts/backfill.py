@@ -62,7 +62,11 @@ def main() -> int:
     with AirkoreaClient() as client:
         for name in TARGET_STATIONS:
             try:
-                items = client.get_station_period(name, data_term=data_term)
+                # DAILY는 ~24행, MONTH/3MONTH는 수백~수천 행 → 넉넉히 요청
+                rows_req = 100 if data_term == "DAILY" else 9999
+                items = client.get_station_period(
+                    name, data_term=data_term, num_of_rows=rows_req
+                )
             except RuntimeError as exc:
                 logger.warning(f"  {name}: 조회 실패 — 스킵 ({exc})")
                 continue

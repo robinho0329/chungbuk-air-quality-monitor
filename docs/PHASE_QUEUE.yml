@@ -29,11 +29,14 @@ phases:
       - id: HYPOTHESIS_TEST
         title: t-test/ANOVA 단지 비교 통계 검정
         priority: 3
-        status: pending
+        status: completed
+        completed_at: 2026-05-29
         depends_on: [DATA_30_PER_STATION]
         deliverables:
-          - src/analysis/hypothesis_test.py (scipy 활용)
-          - dashboard 4번 페이지에 p-value 표시
+          - src/analysis/hypothesis_test.py        # Welch t-test/ANOVA + Cohen's d/η²
+          - tests/test_hypothesis_test.py          # 12건 통과
+          - scripts/generate_hypothesis_report.py  # MD+Word, 30+ 게이트 자동화
+          - reports/hypothesis/YYYY-MM-DD.md/.docx  # daily 루프 자동 생성
 
       - id: ISOLATION_FOREST
         title: IsolationForest 다변량 이상 탐지

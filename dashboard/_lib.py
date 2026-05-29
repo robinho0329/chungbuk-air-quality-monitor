@@ -17,7 +17,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
-from src.config import TARGET_STATIONS  # noqa: E402
+from src.config import STATION_GROUPS, TARGET_STATIONS  # noqa: E402
 from src.storage.database import query_all  # noqa: E402
 
 # ----------------------------------------------------------------------
@@ -60,13 +60,7 @@ POLLUTANT_DISPLAY: dict[str, str] = {
 }
 
 # 단지 그룹화 (가설 검증용)
-STATION_GROUPS: dict[str, str] = {
-    "오창읍": "산단 영향군",
-    "복대동": "산단 영향군",
-    "봉명동": "산단 영향군",
-    "오송읍": "산단 영향군",
-    "용암동": "베이스라인",
-}
+# STATION_GROUPS는 src.config에서 import (단일 진실원천). 위 import 참조.
 
 STATION_DESC: dict[str, str] = {
     "오창읍": "오창과학단지 (이차전지·반도체)",

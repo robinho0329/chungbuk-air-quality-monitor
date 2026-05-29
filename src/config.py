@@ -84,5 +84,17 @@ DISCORD_WEBHOOK_URL: str = _optional("DISCORD_WEBHOOK_URL", "")
 #   권역(흥덕구)인 인접 측정소 봉명동을 보강. 복대동 복구 시 5곳 모두 활용.
 TARGET_STATIONS: tuple[str, ...] = ("오창읍", "복대동", "봉명동", "오송읍", "용암동")
 
+# 측정소 그룹 (가설검정용 단일 진실원천).
+#   산단 영향군 vs 베이스라인(거주지) 비교의 기준. 대시보드도 이 정의를 import한다.
+STATION_GROUPS: dict[str, str] = {
+    "오창읍": "산단 영향군",
+    "복대동": "산단 영향군",
+    "봉명동": "산단 영향군",
+    "오송읍": "산단 영향군",
+    "용암동": "베이스라인",
+}
+INDUSTRIAL_GROUP: str = "산단 영향군"
+BASELINE_GROUP: str = "베이스라인"
+
 # 시도명 (에어코리아 시도별 실시간 측정정보 API의 sidoName 파라미터)
 TARGET_SIDO: str = "충북"
