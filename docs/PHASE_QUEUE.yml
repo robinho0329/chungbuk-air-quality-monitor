@@ -86,12 +86,16 @@ phases:
       - id: DMAIC_REPORT
         title: DMAIC 분석 보고서 자동 생성 (PDF)
         priority: 3
-        status: pending
-        depends_on: [DATA_500, WE_RULES, HYPOTHESIS_TEST]
+        status: completed
+        completed_at: 2026-05-29
+        depends_on: [HYPOTHESIS_TEST]
         deliverables:
-          - scripts/generate_dmaic_report.py
-          - reports/dmaic/YYYY-MM-DD.pdf
-          - reportlab 또는 weasyprint 활용
+          - scripts/generate_dmaic_report.py       # fpdf2(한글 TTF 임베드), 로컬 실행
+          - reports/dmaic/YYYY-MM-DD.pdf            # D-M-A-I-C 3페이지
+        note: |
+          fpdf2 채택(reportlab/weasyprint 대신, 순수 파이썬 → 3.14 안전).
+          Improve에 P0 성과(PM2.5 거짓경보 48%→2%)·Cpk 우선관리, Control에 기상은 향후과제로 명시.
+          한글 폰트(malgun 등) 필요해 CI 미연동, 로컬/온디맨드 생성.
 
   - phase: 4
     items:

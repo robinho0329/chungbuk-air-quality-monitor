@@ -159,7 +159,7 @@ uv run pytest -q   # 60건 통과
 - [ ] **Phase 2 잔여**: Western Electric Rules, IsolationForest
 - [ ] **Phase 3 잔여**: Streamlit Cloud 배포, Discord Webhook 알림
 - [ ] **Phase 4** (선택): 기상청 API 결합, 풍향 회귀 분석
-- [ ] **최종 산출물**: DMAIC 분석 보고서 (PDF)
+- [x] **최종 산출물**: DMAIC 분석 보고서 (PDF) — `scripts/generate_dmaic_report.py`, D-M-A-I-C 3페이지
 
 ---
 
