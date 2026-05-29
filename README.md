@@ -6,7 +6,7 @@
 [![Auto Collect](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions/workflows/collect.yml/badge.svg)](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions)
 ![Python](https://img.shields.io/badge/Python-3.14-blue)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.57-FF4B4B)
-![Tests](https://img.shields.io/badge/tests-100%2F100%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-110%2F110%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 🔗 **라이브 데모**: **https://chungbuk-air-quality-monitor-dfusndrdtukcwk9rog6wzt.streamlit.app/**
@@ -155,6 +155,7 @@ uv run pytest -q   # 60건 통과
 - [x] **Phase 3 (일부)**: GitHub Actions 자동화, Streamlit 6페이지, Prefect flow
 - [x] **Phase 2 (관리도)**: I-Chart/EWMA/CUSUM 관리도 + 이탈 탐지 (`control_chart.py`, 테스트 19건)
 - [x] **Phase 2 (가설검정)**: Welch t-test/ANOVA + Cohen's d/η² + MD·Word 리포트 자동화 (`hypothesis_test.py`, 테스트 12건)
+- [x] **Phase 2 (자기상관 보정)**: 잔차 관리도(일주기 제거+AR(1)) — PM2.5 거짓경보율 48%→2% (`residual_chart.py`, 테스트 10건)
 - [ ] **Phase 2 잔여**: Western Electric Rules, IsolationForest
 - [ ] **Phase 3 잔여**: Streamlit Cloud 배포, Discord Webhook 알림
 - [ ] **Phase 4** (선택): 기상청 API 결합, 풍향 회귀 분석

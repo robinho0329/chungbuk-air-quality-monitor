@@ -26,6 +26,7 @@ from src.analysis.control_chart import (  # noqa: E402
     ewma_chart,
     i_chart,
 )
+from src.analysis.residual_chart import residual_i_chart  # noqa: E402
 
 st.set_page_config(page_title="관리도", page_icon="📈", layout="wide")
 df = load_dataframe()
@@ -195,5 +196,76 @@ st.caption(
     "0.5~1.5σ 작은 평균 이동 → **EWMA/CUSUM**이 더 빨리 탐지합니다. "
     "σ는 인접 관측치 이동범위(MR̄/1.128)로 추정합니다."
 )
+
+# ----------------------------------------------------------------------
+# 자기상관 보정 잔차 관리도 (P0)
+# ----------------------------------------------------------------------
+st.divider()
+st.subheader("🔧 자기상관 보정 — 잔차 관리도 (Residual SPC)")
+st.caption(
+    "대기질은 강한 시계열 자기상관(PM2.5 lag-1 ACF≈0.93)이 있어 **전통 관리도의 "
+    "독립(i.i.d.) 가정이 깨집니다**. 이때 MR 기반 σ가 과소추정돼 관리한계가 좁아져 "
+    "**거짓경보가 폭증**합니다. 일주기(시간대) 제거 + AR(1) 잔차에 관리도를 적용해 보정합니다."
+)
+try:
+    rr = residual_i_chart(series, hours=times.dt.hour, deseasonalize=True)
+
+    rm1, rm2, rm3, rm4 = st.columns(4)
+    rm1.metric(
+        "lag-1 ACF",
+        f"{rr.acf_before:.2f} → {rr.acf_after:.2f}",
+        help="0에 가까울수록 자기상관 제거(백색화) 성공",
+    )
+    rm2.metric("AR(1) 계수 φ", f"{rr.phi:.2f}")
+    rm3.metric("원시 이탈률", f"{rr.raw_violation_rate * 100:.1f}%")
+    rm4.metric(
+        "잔차 이탈률",
+        f"{rr.resid_violation_rate * 100:.1f}%",
+        delta=f"{(rr.resid_violation_rate - rr.raw_violation_rate) * 100:.1f}%p",
+        delta_color="inverse",
+        help="명목 거짓경보율(≈0.27%)에 가까울수록 정상",
+    )
+
+    # 잔차 관리도 플롯 (관측 순서 기준)
+    rc = rr.resid_chart
+    idx = list(range(1, rc.n + 1))
+    rfig = go.Figure()
+    rfig.add_trace(go.Scatter(
+        x=idx, y=rc.ucl, mode="lines", name="UCL",
+        line=dict(color="#d62728", dash="dash", width=1),
+    ))
+    rfig.add_trace(go.Scatter(
+        x=idx, y=rc.lcl, mode="lines", name="LCL",
+        line=dict(color="#d62728", dash="dash", width=1),
+    ))
+    rfig.add_hline(y=rc.center, line=dict(color="#2ca02c", width=1))
+    rfig.add_trace(go.Scatter(
+        x=idx, y=rc.values, mode="lines+markers", name="잔차(e)",
+        line=dict(color="#1f77b4", width=1), marker=dict(size=4),
+    ))
+    if rc.violations:
+        rfig.add_trace(go.Scatter(
+            x=[idx[i] for i in rc.violations],
+            y=[rc.values[i] for i in rc.violations],
+            mode="markers", name="이탈",
+            marker=dict(color="#d62728", size=10, symbol="x"),
+        ))
+    rfig.update_layout(
+        height=380,
+        title=f"{station} · {POLLUTANT_DISPLAY[pollutant]} · 잔차 I-Chart (자기상관 보정)",
+        xaxis_title="관측 순서", yaxis_title="잔차 e (목표 0)",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    st.plotly_chart(rfig, use_container_width=True)
+    st.success(f"✅ {rr.interpret()}")
+    st.caption(
+        "원시 관리도의 높은 이탈률은 대부분 **자기상관에 의한 거짓경보**입니다. "
+        "잔차 관리도에서 남는 이탈만이 진짜 특수원인 후보입니다."
+    )
+except InsufficientSampleError:
+    st.info("잔차 관리도는 표본 30건 이상부터 표시됩니다.")
+except ValueError as e:
+    st.warning(f"잔차 관리도 계산 불가: {e}")
 
 render_footer()

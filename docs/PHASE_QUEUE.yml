@@ -26,6 +26,18 @@ phases:
           - tests/test_control_chart.py           # 19건 통과
           - dashboard/pages/5_📈_관리도.py        # 측정소·지표·차트종류 선택 + 이탈 강조
 
+      - id: RESIDUAL_CHART
+        title: 자기상관 보정 잔차 관리도 (Residual/ARIMA-style SPC)
+        priority: 3
+        status: completed
+        completed_at: 2026-05-29
+        depends_on: [CONTROL_CHART]
+        deliverables:
+          - src/analysis/residual_chart.py        # 일주기 제거 + AR(1) 잔차 I-Chart
+          - tests/test_residual_chart.py           # 10건 통과
+          - dashboard/pages/5_📈_관리도.py        # 거짓경보율 Before/After 섹션
+        note: 실데이터 PM2.5 이탈률 48~50%→1.6~2.1% (ACF 0.93→≈0)
+
       - id: HYPOTHESIS_TEST
         title: t-test/ANOVA 단지 비교 통계 검정
         priority: 3

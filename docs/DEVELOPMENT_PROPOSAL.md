@@ -28,11 +28,18 @@
 
 ## 3. 통합 로드맵 (우선순위)
 
-### P0 — 자기상관 정면돌파: 잔차 관리도 (Residual / ARIMA-based SPC) ★최우선
+### P0 — 자기상관 정면돌파: 잔차 관리도 (Residual / ARIMA-based SPC) ✅ 완료 (2026-05-29)
+> 구현: `src/analysis/residual_chart.py`(일주기 제거+AR(1) 잔차 I-Chart), 테스트 10건,
+> 관리도 페이지에 "자기상관 보정" 섹션 + 거짓경보율 Before/After.
+> **실데이터 효과**: PM2.5 lag-1 ACF 0.93→≈0(백색화), 이탈률 **48~50%→1.6~2.1%**.
+> 원시 t-test의 명목 n과 달리 유효표본 n_eff≈75임을 드러내, 기존 p값이 과대평가였음을 입증.
+
+<details><summary>당초 설계 메모</summary>
 - lag-1 ACF/PACF로 자기상관 진단 → AR(1)/ARIMA 적합 후 **잔차에 I-Chart/EWMA 적용**.
 - 원천 직접 관리도 vs 잔차 관리도의 **거짓경보율 Before/After 비교표**를 리포트에 박제.
 - `estimate_sigma_mr`에 자기상관 경고 게이트(ACF>0.5 시 σ 과소추정 위험 플래그).
 - 공수 M / 임팩트 **최상** — "SPC를 짤 줄 아는 사람"과 "SPC를 실무에 쓸 줄 아는 사람"의 분기점.
+</details>
 
 ### P1 — Self-healing 수집 백필 (운영 신뢰성 근본 해결) ✅ 완료 (2026-05-29)
 - 매 수집 실행에서 직전 24h 갭 감지 → DAILY 기간조회로 자동 복구(>30h 갭은 MONTH escalate).
