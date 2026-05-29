@@ -17,6 +17,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
+from src.config import TARGET_STATIONS  # noqa: E402
 from src.storage.database import query_all  # noqa: E402
 
 # ----------------------------------------------------------------------
@@ -200,7 +201,7 @@ def render_data_status(df: pd.DataFrame) -> None:
 
     cols = st.columns(4)
     cols[0].metric("총 누적", f"{total:,} 건")
-    cols[1].metric("측정소", f"{stations} / 4 곳")
+    cols[1].metric("측정소", f"{stations} / {len(TARGET_STATIONS)} 곳")
     cols[2].metric("마지막 측정", fmt_kst(last_time, with_tz=False), help="KST 기준")
     cols[3].metric(
         "Cp/Cpk 준비",
@@ -230,15 +231,17 @@ def compute_24h_success_rate(df: pd.DataFrame) -> tuple[int, int, float]:
 
     Returns:
         (받은 시각 수, 기대 시각 수, 성공률).
-        기대 시각 수 = 24 × 4 측정소.
+        기대 시각 수 = 24 × 측정소 수. 복대동은 통신장애여도 행(결측)이 삽입되므로
+        received에 포함된다(즉 통신장애 자체가 수집 누락이 아니라 데이터 결측으로 집계).
     """
+    n_stations = len(TARGET_STATIONS)
     if df.empty:
-        return 0, 24 * 4, 0.0
+        return 0, 24 * n_stations, 0.0
     now = now_kst().replace(tzinfo=None)  # df의 datetime은 naive
     since = now - timedelta(hours=24)
     df_24h = df[df["data_time"] >= since]
     received = len(df_24h)
-    expected = 24 * 4
+    expected = 24 * n_stations
     rate = received / expected if expected > 0 else 0.0
     return received, expected, rate
 
