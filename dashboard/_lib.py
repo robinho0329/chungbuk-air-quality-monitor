@@ -95,22 +95,24 @@ def now_kst() -> datetime:
 
 
 # 외부 스케줄러(cron-job.org)가 트리거하는 분(分). 에어코리아가 정각 데이터를
-# 몇~십몇 분 늦게 공개하므로, 정각이 아니라 :20에 트리거해 당시각 데이터를 확보한다.
-_COLLECT_MINUTE = 20
+# 몇~십몇 분 늦게(가변) 공개하므로, 시간당 3회(:15/:35/:55) 폴링해 지연 공개분을 잡는다.
+# ※ 폴링 빈도일 뿐 데이터 해상도(1시간)와는 무관 — 같은 시각은 UNIQUE+INSERT OR IGNORE로 1건만 유지.
+_COLLECT_MINUTES = (15, 35, 55)
 # 트리거 → Actions 실행·커밋·재배포까지 걸리는 여유(분).
 _COLLECT_BUFFER_MIN = 5
 
 
 def next_cron_eta_kst() -> str:
-    """다음 자동 수집 반영 예정 시각 (KST). cron-job.org가 매시 :20 트리거."""
+    """다음 자동 수집 반영 예정 시각 (KST). cron-job.org가 매시 :15/:35/:55 트리거."""
     now = now_kst()
-    # 외부 cron이 매시 :20 트리거 → 수집·커밋·재배포 반영까지 +5분 버퍼.
-    eta_minute = _COLLECT_MINUTE + _COLLECT_BUFFER_MIN
-    if now.minute < eta_minute:
-        eta = now.replace(minute=eta_minute, second=0, microsecond=0)
+    buffered = [m + _COLLECT_BUFFER_MIN for m in _COLLECT_MINUTES]
+    for minute in buffered:
+        if now.minute < minute:
+            eta = now.replace(minute=minute, second=0, microsecond=0)
+            break
     else:
         eta = (now + timedelta(hours=1)).replace(
-            minute=eta_minute, second=0, microsecond=0
+            minute=buffered[0], second=0, microsecond=0
         )
     return eta.strftime("%H:%M KST")
 
