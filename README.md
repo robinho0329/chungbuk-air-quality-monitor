@@ -136,6 +136,7 @@ uv run pytest -q   # 60건 통과
 | [`docs/INTERVIEW_QA.md`](docs/INTERVIEW_QA.md) | 면접 예상 질문 & 답변 스크립트 (QC/API 직무) |
 | [`docs/PHASE2_HANDOFF.md`](docs/PHASE2_HANDOFF.md) | Phase 진행 컨텍스트 |
 | [`docs/GITHUB_ACTIONS_SETUP.md`](docs/GITHUB_ACTIONS_SETUP.md) | 자동 수집 설정 가이드 |
+| [`docs/EXTERNAL_SCHEDULER_SETUP.md`](docs/EXTERNAL_SCHEDULER_SETUP.md) | 외부 cron(cron-job.org)으로 시간당 수집 보장 |
 | [`docs/STREAMLIT_CLOUD_DEPLOY.md`](docs/STREAMLIT_CLOUD_DEPLOY.md) | 라이브 데모 배포 가이드 |
 | [`docs/PREFECT_SETUP.md`](docs/PREFECT_SETUP.md) | (대안) 로컬 Prefect 운영 |
 

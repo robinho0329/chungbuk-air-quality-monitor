@@ -5,13 +5,13 @@ name: 🌬️ 충북 대기질 자동 수집
 
 on:
   schedule:
-    # 매시 3회(:07, :27, :47) UTC.
-    # GitHub Actions 스케줄 cron은 best-effort라 부하 시 지연·누락이 흔하다.
-    # 특히 정각(:00) 부근은 전 세계 cron이 몰려 가장 잘 누락되므로 한산한 분(分)을 선택.
-    # 시간당 3회 시도 → 일부 누락돼도 해당 시각 데이터 확보 확률↑.
-    # 에어코리아 원본은 1시간 단위 갱신 + DB는 INSERT OR IGNORE라 중복 삽입은 무해.
+    # [Fallback] GitHub 내장 schedule cron은 best-effort라 무료 레포에서 트리거를 대량
+    # 드롭한다(실측 24h 중 6회만 실행, 분도 안 지켜짐). 실시간성은 외부 스케줄러
+    # (cron-job.org → workflow_dispatch API)에 맡기고, 이 schedule은 외부가 죽었을 때의
+    # 2차 안전망으로만 둔다. docs/EXTERNAL_SCHEDULER_SETUP.md 참조.
+    # 어쩌다 한 번이라도 실행되면 self-heal이 직전 24h 갭을 자동 복구한다.
     - cron: '7,27,47 * * * *'
-  workflow_dispatch:  # GitHub UI에서 수동 실행 버튼
+  workflow_dispatch:  # [Primary] 외부 cron(cron-job.org) 매시 호출 + UI 수동 실행
 
 permissions:
   contents: write  # 결과 DB 커밋 & push 권한
