@@ -131,6 +131,7 @@ uv run pytest -q   # 60건 통과
 | [`README_PROJECT.md`](README_PROJECT.md) | 프로젝트 배경·가설·Phase 계획 |
 | [`docs/stations.md`](docs/stations.md) | 5개 측정소 정의 |
 | [`docs/ANALYSIS_HYPOTHESES.md`](docs/ANALYSIS_HYPOTHESES.md) | 측정소 위치 기반 가설(H1~H3) + 검정 설계 |
+| [`docs/DEVELOPMENT_PROPOSAL.md`](docs/DEVELOPMENT_PROPOSAL.md) | 에이전트 논의 종합 + AQM 리서치 기반 개발 로드맵 |
 | [`docs/PHASE2_HANDOFF.md`](docs/PHASE2_HANDOFF.md) | Phase 진행 컨텍스트 |
 | [`docs/GITHUB_ACTIONS_SETUP.md`](docs/GITHUB_ACTIONS_SETUP.md) | 자동 수집 설정 가이드 |
 | [`docs/STREAMLIT_CLOUD_DEPLOY.md`](docs/STREAMLIT_CLOUD_DEPLOY.md) | 라이브 데모 배포 가이드 |
