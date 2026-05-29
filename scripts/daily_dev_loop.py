@@ -107,13 +107,14 @@ def accumulation_stats(df: pd.DataFrame) -> dict[str, Any]:
 # 3. 24h 수집 성공률
 # ---------------------------------------------------------------------------
 def health_24h(df: pd.DataFrame) -> dict[str, Any]:
+    n_stations = len(TARGET_STATIONS)
     if df.empty:
-        return {"received": 0, "expected": 96, "rate": 0.0, "missing_hours": []}
+        return {"received": 0, "expected": 24 * n_stations, "rate": 0.0, "missing_hours": []}
     now = datetime.now(tz=KST).replace(tzinfo=None)
     since = now - timedelta(hours=24)
     df_24h = df[df["data_time"] >= since]
     received = len(df_24h)
-    expected = 24 * 4
+    expected = 24 * n_stations  # 측정소 수 동적 (하드코딩 4 → len)
 
     # 시각 누락 hours 찾기
     expected_hours = {

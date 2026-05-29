@@ -109,25 +109,29 @@ phases:
           - src/analysis/wind_regression.py
 
 # 데이터 충분도 마일스톤
+# ※ 2026-05-29 기준 3MONTH 백필로 총 ~10,745건(측정소당 ~2,150건) 확보 → 아래 4개 모두 달성됨.
+#    남은 제약은 '양'이 아니라 '계절 다양성'(현재 봄 한 철). WEATHER_API의 실질 선행조건은
+#    DATA_1000(달성)이 아니라 다계절 데이터(여름~)이며 이는 자연 누적 대기.
 data_milestones:
   DATA_30_PER_STATION:
     description: 측정소당 30건 이상 누적 (Cp/Cpk 최소 표본)
-    eta_hours: 30
+    status: met  # 2026-05-29
   DATA_50_PER_STATION:
     description: 측정소당 50건 이상
-    eta_hours: 50
+    status: met  # 2026-05-29
   DATA_500:
-    description: 총 500건 이상 (한 달 약간 못 미치는 양)
-    eta_hours: 125
+    description: 총 500건 이상
+    status: met  # 2026-05-29
   DATA_1000:
     description: 총 1000건 이상
-    eta_hours: 250
+    status: met  # 2026-05-29
 
-# 매일 자율 루프에서 자동으로 수행하는 작업
+# 매일 자율 루프에서 자동으로 수행하는 작업 (daily_dev_loop.py)
 daily_auto_tasks:
-  - run_pytest: 60건 회귀 테스트
+  - run_pytest: 전체 회귀 테스트 (현재 174건)
   - report_accumulation: 누적 데이터 통계
-  - report_24h_health: 최근 24시간 수집 성공률
-  - report_cpk_matrix: 가능한 측정소·지표 조합 Cpk 산출
-  - report_milestone_progress: 다음 마일스톤까지 남은 시간
-  - report_next_phase_items: 큐에서 다음 후보 작업 목록 안내
+  - report_24h_health: 최근 24시간 수집 성공률 (기대치 = 24h × 측정소수 동적)
+  - report_cpk_matrix: 측정소·지표 조합 Cpk 산출
+  - report_milestone_progress: 데이터 마일스톤 진행률
+  - report_next_phase_items: 큐에서 다음 후보 작업 안내
+  - generate_hypothesis_report: 표본 30+ 시 t-test/ANOVA 리포트(MD+Word) 자동 생성
