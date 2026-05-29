@@ -84,6 +84,14 @@ class TestParseDatetime:
         # 슬래시 구분자는 비표준이므로 None 반환
         assert _parse_datetime("2026/05/27 14:00") is None
 
+    def test_hour_24_normalized_to_next_day_midnight(self) -> None:
+        # 에어코리아는 자정을 'YYYY-MM-DD 24:00'으로 표기 → 익일 00:00으로 정규화
+        assert _parse_datetime("2026-05-28 24:00") == datetime(2026, 5, 29, 0, 0)
+
+    def test_hour_24_month_end_rolls_over(self) -> None:
+        # 월말 24:00은 익월 1일 00:00으로 넘어가야 함
+        assert _parse_datetime("2026-05-31 24:00") == datetime(2026, 6, 1, 0, 0)
+
 
 # ----------------------------------------------------------------------
 # _scrub_key (보안: serviceKey 마스킹)

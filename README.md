@@ -6,7 +6,7 @@
 [![Auto Collect](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions/workflows/collect.yml/badge.svg)](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions)
 ![Python](https://img.shields.io/badge/Python-3.14-blue)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.57-FF4B4B)
-![Tests](https://img.shields.io/badge/tests-60%2F60%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-81%2F81%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 🔗 **라이브 데모**: **https://chungbuk-air-quality-monitor-dfusndrdtukcwk9rog6wzt.streamlit.app/**

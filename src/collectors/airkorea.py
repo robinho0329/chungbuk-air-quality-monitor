@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 import requests
@@ -41,6 +41,11 @@ _ENDPOINT_STATION_INFO = f"{_BASE_URL}/MsrstnInfoInqireSvc/getMsrstnList"
 # 주의: 시도별 실시간 측정정보 엔드포인트는 'ArpltnInforInqireSvc' (Info가 아니라 Infor).
 # 2026-05-28 공공데이터활용지원센터 답변 확인.
 _ENDPOINT_SIDO_REALTIME = f"{_BASE_URL}/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty"
+# 측정소별 실시간 측정정보 조회 (기간 지원). dataTerm=DAILY면 최근 약 24시간 시간별 실측.
+# 누락 시간대 백필(backfill)에 사용. 응답 item에는 stationName이 없어 호출 시 주입한다.
+_ENDPOINT_STATION_PERIOD = (
+    f"{_BASE_URL}/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty"
+)
 
 # 재시도 설정
 _MAX_RETRIES = 3
@@ -82,11 +87,21 @@ def _parse_int(value: Any) -> int | None:
 
 
 def _parse_datetime(value: Any) -> datetime | None:
-    """API 응답의 'YYYY-MM-DD HH:MM' 문자열을 datetime으로 변환."""
+    """API 응답의 'YYYY-MM-DD HH:MM' 문자열을 datetime으로 변환.
+
+    에어코리아는 자정을 'YYYY-MM-DD 24:00'으로 표기한다(해당 일의 끝).
+    파이썬은 24시를 못 받으므로 '익일 00:00'으로 정규화한다.
+    """
     if value in _MISSING_VALUES:
         return None
+    text = str(value).strip()
     try:
-        return datetime.strptime(str(value).strip(), "%Y-%m-%d %H:%M")
+        # '24:00' → 익일 00:00 정규화
+        if " 24:00" in text:
+            date_part = text.split(" ")[0]
+            base = datetime.strptime(date_part, "%Y-%m-%d")
+            return base + timedelta(days=1)
+        return datetime.strptime(text, "%Y-%m-%d %H:%M")
     except (TypeError, ValueError) as exc:
         logger.warning(f"dataTime 파싱 실패: {value!r} ({exc})")
         return None
@@ -265,6 +280,55 @@ class AirkoreaClient:
         ) or []
         logger.info(
             f"시도별 실시간 측정정보 조회: sido={sido_name} -> {len(items)}건"
+        )
+        return items
+
+    # ------------------------------------------------------------------
+    # 3. 측정소별 기간 측정정보 (백필용)
+    # ------------------------------------------------------------------
+    def get_station_period(
+        self,
+        station_name: str,
+        data_term: str = "DAILY",
+        num_of_rows: int = 100,
+        ver: str = "1.3",
+    ) -> list[dict[str, Any]]:
+        """특정 측정소의 기간별 시간 측정정보를 조회한다 (백필용).
+
+        시도별 실시간 엔드포인트는 '현재 시각' 1건만 주지만, 이 엔드포인트는
+        dataTerm 기간의 '시간별 시계열'을 반환하므로 누락된 과거 시간대를 메울 수 있다.
+
+        Args:
+            station_name: 측정소명 (예: "오창읍").
+            data_term: 기간. "DAILY"(최근 약 24시간) / "MONTH" / "3MONTH".
+            num_of_rows: 한 페이지당 결과 수.
+            ver: API 버전. "1.3"이면 PM2.5 포함.
+
+        Returns:
+            시간별 측정 딕셔너리 리스트. 각 item에 stationName을 주입해 반환한다
+            (원본 응답에는 측정소명이 없으므로 to_measurement 호환을 위해 추가).
+        """
+        params: dict[str, Any] = {
+            "serviceKey": self._service_key,
+            "returnType": "json",
+            "numOfRows": num_of_rows,
+            "pageNo": 1,
+            "stationName": station_name,
+            "dataTerm": data_term,
+            "ver": ver,
+        }
+        payload = self._request_json(_ENDPOINT_STATION_PERIOD, params)
+        items = (
+            payload.get("response", {})
+            .get("body", {})
+            .get("items", [])
+        ) or []
+        # 응답 item에는 stationName이 없으므로 주입 (to_measurement 호환).
+        for item in items:
+            item["stationName"] = station_name
+        logger.info(
+            f"측정소별 기간 측정정보 조회: station={station_name}, "
+            f"term={data_term} -> {len(items)}건"
         )
         return items
 
