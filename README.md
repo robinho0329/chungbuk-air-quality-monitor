@@ -140,6 +140,7 @@ uv run pytest -q   # 60건 통과
 | [`docs/ANALYSIS_HYPOTHESES.md`](docs/ANALYSIS_HYPOTHESES.md) | 측정소 위치 기반 가설(H1~H3) + 검정 설계 |
 | [`docs/DEVELOPMENT_PROPOSAL.md`](docs/DEVELOPMENT_PROPOSAL.md) | 에이전트 논의 종합 + AQM 리서치 기반 개발 로드맵 |
 | [`docs/INTERVIEW_QA.md`](docs/INTERVIEW_QA.md) | 면접 예상 질문 & 답변 스크립트 (QC/API 직무) |
+| [`docs/INSIGHTS.md`](docs/INSIGHTS.md) | 전체 지표 종합 인사이트 (SPC+환경 다관점) |
 | [`docs/PHASE2_HANDOFF.md`](docs/PHASE2_HANDOFF.md) | Phase 진행 컨텍스트 |
 | [`docs/GITHUB_ACTIONS_SETUP.md`](docs/GITHUB_ACTIONS_SETUP.md) | 자동 수집 설정 가이드 |
 | [`docs/EXTERNAL_SCHEDULER_SETUP.md`](docs/EXTERNAL_SCHEDULER_SETUP.md) | 외부 cron(cron-job.org)으로 시간당 수집 보장 |
