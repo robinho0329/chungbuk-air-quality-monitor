@@ -162,6 +162,9 @@ else:
                 )
             elif pd.notna(latest.get("flag")) and latest["flag"]:
                 st.caption(f"⚠️ 결측 사유: {latest['flag']}")
+            # 개별 지표는 있으나 통합지수(KHAI)만 미제공인 경우 안내 (복대동 등)
+            elif pd.isna(latest.get("khai")):
+                st.caption("ℹ️ 통합지수(KHAI) 미제공 — 개별 지표는 정상 수집 중")
 
 st.divider()
 
