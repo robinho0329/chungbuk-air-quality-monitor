@@ -21,6 +21,7 @@ from dashboard._lib import (  # noqa: E402
     page_header,
     render_data_status,
     render_footer,
+    render_insight,
     render_sidebar,
 )
 from src.analysis.capability import (  # noqa: E402
@@ -83,6 +84,12 @@ st.divider()
 if df.empty:
     render_footer()
     st.stop()
+
+render_insight(
+    "**PM2.5는 전 측정소에서 Cpk<1(규격 미달)**로 만성 공정능력 부족 — 최우선 관리 대상입니다. 반면 **SO2·CO는 양호**(Cpk≥1.1). "
+    "관리 자원을 PM2.5에 집중해야 합니다. 단, 측정소 간 Cpk 차이(위치)보다 **시간 변동이 훨씬 크다**는 점에 유의하세요 — "
+    "위치 줄세우기보다 공통원인(계절·기상) 관리가 핵심입니다."
+)
 
 # ----------------------------------------------------------------------
 # 옵션

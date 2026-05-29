@@ -22,6 +22,7 @@ from dashboard._lib import (  # noqa: E402
     page_header,
     render_data_status,
     render_footer,
+    render_insight,
     render_sidebar,
 )
 
@@ -41,6 +42,14 @@ st.divider()
 if df.empty:
     render_footer()
     st.stop()
+
+render_insight(
+    "외부 스케줄러가 **시간당 3회(:15/:35/:55) 폴링**하지만, 이는 에어코리아의 *가변 공개 지연*에 "
+    "대응하는 **재시도(가용성)**일 뿐 데이터 해상도(1시간)와 무관합니다. 빈 시간대는 **self-healing**이 "
+    "다음 실행에서 자동 복구하고, 측정시각(`data_time`)과 수집시각(`created_at`)을 분리 기록해 "
+    "**'원천 결측' vs '수집 누락'**을 구분합니다."
+)
+st.divider()
 
 # ----------------------------------------------------------------------
 # 24h 성공률 KPI

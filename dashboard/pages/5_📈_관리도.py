@@ -18,6 +18,7 @@ from dashboard._lib import (  # noqa: E402
     page_header,
     render_data_status,
     render_footer,
+    render_insight,
     render_sidebar,
 )
 from src.analysis.control_chart import (  # noqa: E402
@@ -43,6 +44,12 @@ st.divider()
 if df.empty:
     render_footer()
     st.stop()
+
+render_insight(
+    "대기질은 **lag-1 자기상관이 0.9를 넘어** 전통 관리도가 거짓경보를 양산합니다(원시 이탈률 ~50%). "
+    "페이지 하단 **'자기상관 보정 잔차 관리도'**에서 보정 후 이탈률이 명목수준(~2%)으로 떨어지는 것을 확인하세요. "
+    "**잔차 관리도의 이탈만이 진짜 특수원인 후보**입니다 — 이것이 SPC를 자기상관 데이터에 올바르게 쓰는 방법입니다."
+)
 
 # ----------------------------------------------------------------------
 # 옵션

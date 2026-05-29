@@ -21,6 +21,7 @@ from dashboard._lib import (  # noqa: E402
     page_header,
     render_data_status,
     render_footer,
+    render_insight,
     render_sidebar,
 )
 from src.analysis.usl_lsl import SPEC_LIMITS  # noqa: E402
@@ -41,6 +42,12 @@ st.divider()
 if df.empty:
     render_footer()
     st.stop()
+
+render_insight(
+    "시계열에서 **PM2.5는 새벽~오전(야간 역전층 정체)에 높고 한낮에 희석**됩니다. 월별로는 **봄철(3월) 급증**이 "
+    "뚜렷한데 황사·장거리 수송 등 **광역 유입** 신호입니다. 여러 측정소가 **같은 시각 함께 움직이는 것**에 "
+    "주목하세요 — 위치별 차이보다 시간·기상 공통요인이 농도를 지배합니다. (기간을 바꿔 계절 추세를 비교해보세요)"
+)
 
 # ----------------------------------------------------------------------
 # 기간 필터 (계절성 등 기간 분석)

@@ -21,6 +21,7 @@ from dashboard._lib import (  # noqa: E402
     page_header,
     render_data_status,
     render_footer,
+    render_insight,
     render_sidebar,
 )
 
@@ -40,6 +41,12 @@ st.divider()
 if df.empty:
     render_footer()
     st.stop()
+
+render_insight(
+    "처음 가설('산단>거주지')은 **기각이 아니라 재정의**됩니다. 산단군 PM2.5·PM10이 통계적으론 높지만 **효과크기가 작고"
+    "(위치 설명력 5% 미만)**, **NO2·CO는 오히려 거주지가 높습니다**(교통·난방 등 생활 연소). 게다가 **주중=주말**이라 "
+    "산업·교통보다 기상이 지배적입니다. → '산단=오염'이 아니라 **오염물질별 발생원이 다르다**가 정직한 결론입니다."
+)
 
 # ----------------------------------------------------------------------
 # 측정소 그룹 안내

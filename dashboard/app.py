@@ -28,6 +28,7 @@ from dashboard._lib import (  # noqa: E402
     page_header,
     render_data_status,
     render_footer,
+    render_insight,
     render_sidebar,
 )
 from src.config import TARGET_STATIONS  # noqa: E402
@@ -55,6 +56,12 @@ st.divider()
 # ----------------------------------------------------------------------
 # 측정소별 최신 카드 (등급별 그라데이션 + 측정 시각)
 # ----------------------------------------------------------------------
+render_insight(
+    "측정소 간 평균 차이는 작습니다(공간 변동 < 시간 변동). 변동의 대부분은 위치가 아니라 "
+    "**시간·기상(계절·일주기)**에서 옵니다. 공정능력이 가장 낮은 우선관리 대상은 **PM2.5**입니다. "
+    "자세한 종합 결론은 GitHub 레포의 `docs/INSIGHTS.md` 참조."
+)
+
 st.subheader("📍 측정소별 최신 측정값")
 
 if df.empty:

@@ -154,6 +154,11 @@ def load_dataframe() -> pd.DataFrame:
     return df
 
 
+def render_insight(body: str) -> None:
+    """페이지 인사이트 콜아웃 (테마 안전). docs/INSIGHTS.md 핵심을 페이지 맥락에 연결."""
+    st.info(f"💡 **인사이트** — {body}")
+
+
 def date_range_filter(df: pd.DataFrame, *, key: str = "dr") -> pd.DataFrame:
     """기간 선택 UI를 그리고 선택 구간으로 필터링한 DataFrame을 반환한다.
 
