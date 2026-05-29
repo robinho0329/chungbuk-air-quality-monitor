@@ -79,8 +79,10 @@ DISCORD_WEBHOOK_URL: str = _optional("DISCORD_WEBHOOK_URL", "")
 # ============================================================
 # 대상 측정소 (확정 정의)
 # ============================================================
-# Phase 1: 4개 측정소. 실제 stationName은 측정소정보 API로 검증 후 docs/stations.md에 기록.
-TARGET_STATIONS: tuple[str, ...] = ("오창읍", "복대동", "오송읍", "용암동")
+# Phase 1: 4개 측정소로 시작. 실제 stationName은 측정소정보 API로 검증 후 docs/stations.md에 기록.
+# 봉명동 추가(5곳): 복대동(흥덕구 산단육거리)이 통신장애로 지속 결측 → 같은 SK하이닉스 청주캠퍼스
+#   권역(흥덕구)인 인접 측정소 봉명동을 보강. 복대동 복구 시 5곳 모두 활용.
+TARGET_STATIONS: tuple[str, ...] = ("오창읍", "복대동", "봉명동", "오송읍", "용암동")
 
 # 시도명 (에어코리아 시도별 실시간 측정정보 API의 sidoName 파라미터)
 TARGET_SIDO: str = "충북"

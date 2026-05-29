@@ -1,6 +1,6 @@
 # 🌬️ 충북권 산업단지 대기질 SPC 모니터링 시스템
 
-> **충북 4개 측정소(이차전지·화학·바이오 산단 + 거주지 베이스라인)의 대기질을
+> **충북 5개 측정소(이차전지·반도체·화학·바이오 산단 + 거주지 베이스라인)의 대기질을
 > 매시 자동 수집하여 통계적 공정관리(SPC)로 분석하는 무중단·무비용 운영 시스템.**
 
 [![Auto Collect](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions/workflows/collect.yml/badge.svg)](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions)
@@ -12,7 +12,7 @@
 🔗 **라이브 데모**: **https://chungbuk-air-quality-monitor-dfusndrdtukcwk9rog6wzt.streamlit.app/**
 📂 **레포**: https://github.com/robinho0329/chungbuk-air-quality-monitor
 
-> 클릭만 하시면 매시 자동 누적되는 충북 4개 측정소 대기질 데이터를
+> 클릭만 하시면 매시 자동 누적되는 충북 5개 측정소 대기질 데이터를
 > 5페이지(홈/수집 모니터링/실시간 측정값/공정능력 분석/단지 비교)에서 확인할 수 있습니다.
 > 컴퓨터를 꺼도 GitHub Actions가 매시 데이터를 추가하므로 계속 새로워집니다.
 
@@ -26,7 +26,7 @@ QC/API 생산관리 직무에서 핵심 역량인 **SPC(통계적 공정관리)*
 
 | 제조 공정 (실제 직무) | 본 프로젝트 |
 |---------------------|-----------|
-| 공정 라인 N개 | 측정소 4곳 |
+| 공정 라인 N개 | 측정소 5곳 |
 | 측정 지표 (불량률, 치수 등) | 6종 오염물질 (PM10/2.5, O3, NO2, SO2, CO) |
 | 규격 한계 USL/LSL | 대기환경보전법 환경기준 |
 | 시간당 샘플링 | 시간당 API 호출 |
@@ -129,7 +129,7 @@ uv run pytest -q   # 60건 통과
 | 문서 | 내용 |
 |------|------|
 | [`README_PROJECT.md`](README_PROJECT.md) | 프로젝트 배경·가설·Phase 계획 |
-| [`docs/stations.md`](docs/stations.md) | 4개 측정소 정의 |
+| [`docs/stations.md`](docs/stations.md) | 5개 측정소 정의 |
 | [`docs/PHASE2_HANDOFF.md`](docs/PHASE2_HANDOFF.md) | Phase 진행 컨텍스트 |
 | [`docs/GITHUB_ACTIONS_SETUP.md`](docs/GITHUB_ACTIONS_SETUP.md) | 자동 수집 설정 가이드 |
 | [`docs/STREAMLIT_CLOUD_DEPLOY.md`](docs/STREAMLIT_CLOUD_DEPLOY.md) | 라이브 데모 배포 가이드 |
