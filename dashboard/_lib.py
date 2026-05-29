@@ -94,20 +94,22 @@ def now_kst() -> datetime:
     return datetime.now(tz=KST)
 
 
+# 외부 스케줄러(cron-job.org)가 트리거하는 분(分). 매시 정각.
+_COLLECT_MINUTE = 0
+# 정각 트리거 → Actions 실행·커밋·재배포까지 걸리는 여유(분).
+_COLLECT_BUFFER_MIN = 5
+
+
 def next_cron_eta_kst() -> str:
-    """다음 GitHub Actions 자동 수집 예정 시각 (KST). 매시 :07/:27/:47 시도."""
+    """다음 자동 수집 반영 예정 시각 (KST). cron-job.org가 매시 정각 트리거."""
     now = now_kst()
-    # GHA cron이 매시 3회(:07, :27, :47 UTC = KST 동일 분, 시차는 정수시간).
-    # best-effort 스케줄러라 수 분 지연이 흔하므로 안내값엔 +3분 버퍼.
-    slots = (7, 27, 47)
-    buffered = tuple(m + 3 for m in slots)
-    for minute in buffered:
-        if now.minute < minute:
-            eta = now.replace(minute=minute, second=0, microsecond=0)
-            break
+    # 외부 cron이 매시 :00 트리거 → 수집·커밋·재배포 반영까지 +5분 버퍼.
+    eta_minute = _COLLECT_MINUTE + _COLLECT_BUFFER_MIN
+    if now.minute < eta_minute:
+        eta = now.replace(minute=eta_minute, second=0, microsecond=0)
     else:
         eta = (now + timedelta(hours=1)).replace(
-            minute=buffered[0], second=0, microsecond=0
+            minute=eta_minute, second=0, microsecond=0
         )
     return eta.strftime("%H:%M KST")
 
