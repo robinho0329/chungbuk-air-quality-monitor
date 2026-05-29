@@ -94,16 +94,17 @@ def now_kst() -> datetime:
     return datetime.now(tz=KST)
 
 
-# 외부 스케줄러(cron-job.org)가 트리거하는 분(分). 매시 정각.
-_COLLECT_MINUTE = 0
-# 정각 트리거 → Actions 실행·커밋·재배포까지 걸리는 여유(분).
+# 외부 스케줄러(cron-job.org)가 트리거하는 분(分). 에어코리아가 정각 데이터를
+# 몇~십몇 분 늦게 공개하므로, 정각이 아니라 :20에 트리거해 당시각 데이터를 확보한다.
+_COLLECT_MINUTE = 20
+# 트리거 → Actions 실행·커밋·재배포까지 걸리는 여유(분).
 _COLLECT_BUFFER_MIN = 5
 
 
 def next_cron_eta_kst() -> str:
-    """다음 자동 수집 반영 예정 시각 (KST). cron-job.org가 매시 정각 트리거."""
+    """다음 자동 수집 반영 예정 시각 (KST). cron-job.org가 매시 :20 트리거."""
     now = now_kst()
-    # 외부 cron이 매시 :00 트리거 → 수집·커밋·재배포 반영까지 +5분 버퍼.
+    # 외부 cron이 매시 :20 트리거 → 수집·커밋·재배포 반영까지 +5분 버퍼.
     eta_minute = _COLLECT_MINUTE + _COLLECT_BUFFER_MIN
     if now.minute < eta_minute:
         eta = now.replace(minute=eta_minute, second=0, microsecond=0)
