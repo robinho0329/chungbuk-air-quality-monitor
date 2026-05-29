@@ -13,7 +13,7 @@
 📂 **레포**: https://github.com/robinho0329/chungbuk-air-quality-monitor
 
 > 클릭만 하시면 매시 자동 누적되는 충북 5개 측정소 대기질 데이터를
-> 5페이지(홈/수집 모니터링/실시간 측정값/공정능력 분석/단지 비교)에서 확인할 수 있습니다.
+> 6페이지(홈/수집 모니터링/실시간 측정값/공정능력 분석/단지 비교/관리도)에서 확인할 수 있습니다.
 > 컴퓨터를 꺼도 GitHub Actions가 매시 데이터를 추가하므로 계속 새로워집니다.
 
 ---
@@ -56,7 +56,7 @@ flowchart LR
     C -->|INSERT OR IGNORE| D[(SQLite data.db)]
     D -->|auto commit & push| E[GitHub Repo]
     E -->|auto redeploy| F[Streamlit Cloud]
-    F -->|시각화| G[대시보드 5 페이지]
+    F -->|시각화| G[대시보드 6 페이지]
 
     H[로컬 PC] -.->|선택: 분석| D
     H -.->|pytest 60건| I[CI 검증]
@@ -141,8 +141,9 @@ uv run pytest -q   # 60건 통과
 
 - [x] **Phase 1**: 수집 + SQLite 저장 + 단위 테스트 38건
 - [x] **Phase 2 (일부)**: Cp/Cpk 계산 + USL/LSL 환경기준 + 테스트 22건
-- [x] **Phase 3 (일부)**: GitHub Actions 자동화, Streamlit 5페이지, Prefect flow
-- [ ] **Phase 2 잔여**: Western Electric Rules, EWMA/CUSUM, IsolationForest, ANOVA
+- [x] **Phase 3 (일부)**: GitHub Actions 자동화, Streamlit 6페이지, Prefect flow
+- [x] **Phase 2 (관리도)**: I-Chart/EWMA/CUSUM 관리도 + 이탈 탐지 (`control_chart.py`, 테스트 19건)
+- [ ] **Phase 2 잔여**: Western Electric Rules, IsolationForest, ANOVA
 - [ ] **Phase 3 잔여**: Streamlit Cloud 배포, Discord Webhook 알림
 - [ ] **Phase 4** (선택): 기상청 API 결합, 풍향 회귀 분석
 - [ ] **최종 산출물**: DMAIC 분석 보고서 (PDF)

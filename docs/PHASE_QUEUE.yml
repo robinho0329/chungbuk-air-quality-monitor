@@ -18,12 +18,13 @@ phases:
       - id: CONTROL_CHART
         title: EWMA/CUSUM/X-bar 관리도 데이터 생성
         priority: 3
-        status: pending
+        status: completed
+        completed_at: 2026-05-29
         depends_on: []
         deliverables:
-          - src/analysis/control_chart.py
-          - tests/test_control_chart.py
-          - dashboard "관리도" 페이지
+          - src/analysis/control_chart.py        # I-Chart/EWMA/CUSUM (MR 기반 σ)
+          - tests/test_control_chart.py           # 19건 통과
+          - dashboard/pages/5_📈_관리도.py        # 측정소·지표·차트종류 선택 + 이탈 강조
 
       - id: HYPOTHESIS_TEST
         title: t-test/ANOVA 단지 비교 통계 검정
