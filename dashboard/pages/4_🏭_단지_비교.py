@@ -146,16 +146,23 @@ with c2:
                 f"{san_mean - base_mean:+.3f}",
                 f"{diff_pct:+.1f}% vs 베이스라인",
             )
-        n_san = int(group_summary.loc["산단 영향군", "표본수"])
-        n_base = int(group_summary.loc["베이스라인", "표본수"])
-        if n_san < 30 or n_base < 30:
+        # 선택 지표의 Welch t-test 실제 결과 (산단 vs 베이스라인)
+        try:
+            tt = industrial_vs_baseline(
+                df_p, pollutant, STATION_GROUPS, INDUSTRIAL_GROUP, BASELINE_GROUP
+            )
+            st.metric(
+                "Welch t-test p-value",
+                f"{tt.p_value:.3g}",
+                f"{'유의 (p<0.05)' if tt.significant else '비유의'} · 효과크기 d={tt.cohens_d:+.2f} ({tt.effect_label()})",
+                delta_color="off",
+            )
             st.caption(
-                f"⚠️ t-test 권장 표본 부족 (산단 {n_san}, 베이스라인 {n_base}; 각 ≥30 필요)"
+                f"t={tt.t_stat:.2f}, df={tt.dof:.0f} · "
+                f"{'p값은 1만 건 기준이라 자기상관(유효표본↓) 감안 시 과대평가될 수 있음' if tt.n_a > 1000 else ''}"
             )
-        else:
-            st.success(
-                "💡 표본 충분 — Phase 2에서 scipy t-test 추가 예정"
-            )
+        except (InsufficientSampleError, ValueError) as _e:
+            st.caption(f"⚠️ t-test 계산 불가: 표본/분산 부족 ({_e})")
 
 # ----------------------------------------------------------------------
 # Boxplot (측정소별)

@@ -239,7 +239,7 @@ def render_footer() -> None:
     """모든 페이지 하단 공통 푸터."""
     st.divider()
     st.caption(
-        f"⚙️ 매시 :15 UTC ({next_cron_eta_kst()} 예정) GitHub Actions 자동 수집 · "
+        f"⚙️ 매시 자동 수집 (다음 {next_cron_eta_kst()}) · self-healing 갭 복구 · "
         f"[코드]({GITHUB_URL}) · "
         f"QC/API 직무 포트폴리오 (SPC + 6시그마 DMAIC)"
     )

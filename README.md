@@ -41,9 +41,9 @@ QC/API 생산관리 직무에서 핵심 역량인 **SPC(통계적 공정관리)*
 |------|------|-------------|
 | **D**efine | 문제 정의 | 산단 인근 대기질이 거주지보다 나쁜가? 어느 지표가 가장 문제인가? |
 | **M**easure | 측정 시스템 구축 | `collectors/airkorea.py` + `flows/collect_flow.py` + GitHub Actions 매시 자동 수집 |
-| **A**nalyze | 통계 분석 | `analysis/capability.py` Cp/Cpk + 단지 간 비교 (t-test/ANOVA 예정) |
-| **I**mprove | 개선 권고 | Cpk 낮은 지표 식별 → 우선 관리 대상 도출 (분석 보고서) |
-| **C**ontrol | 지속 모니터링 | Streamlit 대시보드 + Western Electric Rules 자동 알림 (예정) |
+| **A**nalyze | 통계 분석 | `analysis/capability.py` Cp/Cpk + `hypothesis_test.py` Welch t-test/ANOVA + 자기상관 진단 |
+| **I**mprove | 개선 권고 | 잔차 관리도로 거짓경보 48%→2% + Cpk 낮은 지표 우선관리 도출 (DMAIC PDF) |
+| **C**ontrol | 지속 모니터링 | Streamlit 대시보드(관리도/공정능력/GIS) + self-healing 수집 (WE Rules·알림 예정) |
 
 ---
 
@@ -51,7 +51,7 @@ QC/API 생산관리 직무에서 핵심 역량인 **SPC(통계적 공정관리)*
 
 ```mermaid
 flowchart LR
-    A[에어코리아 OpenAPI] -->|매시 :15 UTC| B[GitHub Actions Runner]
+    A[에어코리아 OpenAPI] -->|매시 자동(외부 cron)| B[GitHub Actions Runner]
     B -->|uv + Python 3.14| C[scripts/collect_once.py]
     C -->|INSERT OR IGNORE| D[(SQLite data.db)]
     D -->|auto commit & push| E[GitHub Repo]
@@ -59,7 +59,7 @@ flowchart LR
     F -->|시각화| G[대시보드 6 페이지]
 
     H[로컬 PC] -.->|선택: 분석| D
-    H -.->|pytest 60건| I[CI 검증]
+    H -.->|pytest 174건| I[CI 검증]
 ```
 
 **핵심 특징**:
@@ -95,11 +95,11 @@ flowchart LR
 | 수집 | requests + 지수 백오프 재시도 | API 일시 장애 자가복구 |
 | 저장 | SQLite + SQLModel | 단일 파일 → repo 영속화 용이 |
 | 분석 | pandas + numpy | 표준 시계열 처리 |
-| 통계 | Cp/Cpk (자체 구현) + scipy(예정) | 환경기준 기반 SPC |
+| 통계 | Cp/Cpk·관리도·잔차 SPC (자체 구현) + scipy (t-test/ANOVA) | 환경기준 기반 SPC |
 | 시각화 | Streamlit + Plotly | 한국어 멀티페이지, 인터랙티브 |
 | 자동화 | **GitHub Actions** + Prefect (로컬용) | 무비용 무중단 |
 | 환경 | uv + Python 3.14 | 빠른 의존성 관리, lock 재현성 |
-| 테스트 | pytest (60건 / all passing) | 변환·마스킹·DB 제약·SPC 계산 |
+| 테스트 | pytest (174건 / all passing) | 변환·마스킹·DB 제약·SPC 계산 |
 | 보안 | dotenv + 로그 마스킹 | API 키 노출 차단 |
 
 ---
@@ -126,7 +126,7 @@ uv run streamlit run dashboard/app.py
 ### 테스트
 
 ```bash
-uv run pytest -q   # 60건 통과
+uv run pytest -q   # 174건 통과
 ```
 
 ---
@@ -157,9 +157,10 @@ uv run pytest -q   # 60건 통과
 - [x] **Phase 2 (관리도)**: I-Chart/EWMA/CUSUM 관리도 + 이탈 탐지 (`control_chart.py`, 테스트 19건)
 - [x] **Phase 2 (가설검정)**: Welch t-test/ANOVA + Cohen's d/η² + MD·Word 리포트 자동화 (`hypothesis_test.py`, 테스트 12건)
 - [x] **Phase 2 (자기상관 보정)**: 잔차 관리도(일주기 제거+AR(1)) — PM2.5 거짓경보율 48%→2% (`residual_chart.py`, 테스트 10건)
+- [x] **Phase 3 (운영)**: Streamlit Cloud 배포 + 외부 cron 시간당 수집 + self-healing 백필
 - [ ] **Phase 2 잔여**: Western Electric Rules, IsolationForest
-- [ ] **Phase 3 잔여**: Streamlit Cloud 배포, Discord Webhook 알림
-- [ ] **Phase 4** (선택): 기상청 API 결합, 풍향 회귀 분석
+- [ ] **Phase 3 잔여**: Discord Webhook 알림
+- [ ] **Phase 4** (선택): 기상청 API 결합, 풍향 회귀 분석 (데이터 축적 후)
 - [x] **최종 산출물**: DMAIC 분석 보고서 (PDF) — `scripts/generate_dmaic_report.py`, D-M-A-I-C 3페이지
 
 ---
