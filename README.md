@@ -6,7 +6,7 @@
 [![Auto Collect](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions/workflows/collect.yml/badge.svg)](https://github.com/robinho0329/chungbuk-air-quality-monitor/actions)
 ![Python](https://img.shields.io/badge/Python-3.14-blue)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.57-FF4B4B)
-![Tests](https://img.shields.io/badge/tests-93%2F93%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-100%2F100%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 🔗 **라이브 데모**: **https://chungbuk-air-quality-monitor-dfusndrdtukcwk9rog6wzt.streamlit.app/**
@@ -67,6 +67,7 @@ flowchart LR
 - ✅ **무비용**: GitHub Actions public repo 무제한 + Streamlit Cloud Community Tier
 - ✅ **무누락**: INSERT OR IGNORE + UNIQUE(station, time)로 중복·재실행 안전
 - ✅ **자가복구**: API 일시 장애 시 지수 백오프 재시도 3회
+- ✅ **Self-healing**: 매 수집 실행이 직전 24h 갭을 감지·자동 백필 → GHA cron 드롭돼도 다음 성공 실행이 멱등 복구
 
 ---
 

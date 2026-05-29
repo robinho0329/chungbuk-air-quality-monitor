@@ -7,6 +7,7 @@ insert_measurements는 (station_name, data_time) 중복은 무시(SQLite INSERT 
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -102,6 +103,23 @@ def query_all() -> list[AirQualityMeasurement]:
             AirQualityMeasurement.station_name,
         )
         return list(session.exec(stmt).all())
+
+
+def query_pairs_since(since: datetime) -> set[tuple[str, datetime]]:
+    """since 이후의 (station_name, data_time) 쌍 집합을 반환한다.
+
+    self-healing 갭 탐지용. 전체 로우 적재 없이 키만 가져온다.
+    """
+    engine = get_engine()
+    with Session(engine) as session:
+        stmt = (
+            select(
+                AirQualityMeasurement.station_name,
+                AirQualityMeasurement.data_time,
+            )
+            .where(AirQualityMeasurement.data_time >= since)
+        )
+        return {(name, dt) for name, dt in session.exec(stmt).all()}
 
 
 def query_by_station(station_name: str) -> list[AirQualityMeasurement]:

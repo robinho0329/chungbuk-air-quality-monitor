@@ -34,10 +34,12 @@
 - `estimate_sigma_mr`에 자기상관 경고 게이트(ACF>0.5 시 σ 과소추정 위험 플래그).
 - 공수 M / 임팩트 **최상** — "SPC를 짤 줄 아는 사람"과 "SPC를 실무에 쓸 줄 아는 사람"의 분기점.
 
-### P1 — Self-healing 수집 백필 (운영 신뢰성 근본 해결)
-- 매 run에서 직전 48~72h 갭 감지 → 기간조회로 자동 백필. cron 시도 횟수↑가 아니라 **수렴 보장 구조**.
-- `scripts/backfill.py`가 이미 존재 → 갭 탐지 + 호출 결합만. 공수 S~M.
-- "best-effort cron 한계를 멱등 백필로 극복"은 강력한 운영 서사.
+### P1 — Self-healing 수집 백필 (운영 신뢰성 근본 해결) ✅ 완료 (2026-05-29)
+- 매 수집 실행에서 직전 24h 갭 감지 → DAILY 기간조회로 자동 복구(>30h 갭은 MONTH escalate).
+  cron 시도 횟수↑가 아니라 **수렴 보장 구조**. cron이 며칠 드롭돼도 다음 1회 성공이 메움.
+- 구현: `src/collectors/self_heal.py`(find_missing_hours/self_heal), `collect_once.py`에 연결,
+  `database.py:query_pairs_since`. 테스트 7건. 원본 부재 시각은 "잔여"로 정직 보고.
+- "best-effort cron 한계를 멱등 백필로 극복" — 운영 서사 확보.
 
 ### P2 — 데이터 품질 게이트 + MSA 대체분석
 - (운영) 측정소×시간 커버리지·결측률·물리범위 검증을 수집모니터링 페이지+daily 리포트에 노출. 복대동 PM2.5 통신장애를 명시적 결측사유로 구분.

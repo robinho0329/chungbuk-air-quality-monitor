@@ -29,6 +29,7 @@ from src.collectors.airkorea import (  # noqa: E402
     filter_target_stations,
     to_measurement,
 )
+from src.collectors.self_heal import self_heal  # noqa: E402
 from src.config import LOG_LEVEL, TARGET_SIDO, TARGET_STATIONS  # noqa: E402
 from src.storage.database import (  # noqa: E402
     init_db,
@@ -96,6 +97,16 @@ def main() -> int:
     # 5. 저장
     attempted, inserted = insert_measurements(measurements)
     logger.info(f"저장 결과: 시도 {attempted}건 / 신규 삽입 {inserted}건")
+
+    # 5-1. Self-healing: 최근 24h 누락 시각 자동 복구 (GHA cron 드롭 대응)
+    try:
+        heal = self_heal()
+        if heal.healed > 0:
+            logger.info(
+                f"self-heal: 누락 {heal.healed}건 복구 (잔여 {heal.missing_after}건)"
+            )
+    except (RuntimeError, ValueError) as exc:
+        logger.warning(f"self-heal 실패(수집 자체는 성공): {exc}")
 
     # 6. 검증: 저장된 데이터 요약
     all_records = query_all()
