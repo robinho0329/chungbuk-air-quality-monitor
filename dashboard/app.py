@@ -81,7 +81,20 @@ else:
                 )
                 continue
 
-        latest = sub.sort_values("data_time").iloc[-1]
+        sub_sorted = sub.sort_values("data_time")
+        newest = sub_sorted.iloc[-1]
+        # 최신 레코드의 모든 오염물질이 결측(통신장애 등)이면 직전 실측 행을 대신 표시.
+        # (복대동은 khai만 null이고 PM 값은 있는 경우가 많아 개별 지표 기준으로 판단)
+        _pol_cols = ["pm10", "pm25", "o3", "no2", "so2", "co"]
+        has_data = sub_sorted[_pol_cols].notna().any(axis=1)
+        valid = sub_sorted[has_data]
+        latest = valid.iloc[-1] if not valid.empty else newest
+        # 표시 실측값이 최신 시각보다 오래됐으면 지연 시간(시간) 계산.
+        stale_hours = 0
+        if pd.notna(latest["data_time"]) and pd.notna(newest["data_time"]):
+            stale_hours = int(
+                (newest["data_time"] - latest["data_time"]).total_seconds() // 3600
+            )
         grade = latest.get("khai_grade")
         grade_label = (
             GRADE_LABELS.get(int(grade), "—") if pd.notna(grade) else "—"
@@ -137,7 +150,17 @@ else:
                 use_container_width=True,
             )
 
-            if pd.notna(latest.get("flag")) and latest["flag"]:
+            if stale_hours > 0:
+                flag_txt = (
+                    f" ({newest['flag']})"
+                    if pd.notna(newest.get("flag")) and newest["flag"]
+                    else ""
+                )
+                st.caption(
+                    f"⚠️ 최신 {stale_hours}시간 결측{flag_txt} — "
+                    f"직전 실측({fmt_kst(latest['data_time'], with_tz=False)}) 표시"
+                )
+            elif pd.notna(latest.get("flag")) and latest["flag"]:
                 st.caption(f"⚠️ 결측 사유: {latest['flag']}")
 
 st.divider()
