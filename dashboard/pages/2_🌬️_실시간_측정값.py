@@ -15,6 +15,7 @@ import streamlit as st  # noqa: E402
 
 from dashboard._lib import (  # noqa: E402
     POLLUTANT_DISPLAY,
+    date_range_filter,
     fmt_kst,
     load_dataframe,
     page_header,
@@ -40,6 +41,16 @@ st.divider()
 if df.empty:
     render_footer()
     st.stop()
+
+# ----------------------------------------------------------------------
+# 기간 필터 (계절성 등 기간 분석)
+# ----------------------------------------------------------------------
+df = date_range_filter(df, key="rt")
+if df.empty:
+    st.warning("선택한 기간에 데이터가 없습니다.")
+    render_footer()
+    st.stop()
+st.divider()
 
 # ----------------------------------------------------------------------
 # 필터 (사이드바 아래)

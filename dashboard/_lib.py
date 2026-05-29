@@ -146,8 +146,56 @@ def load_dataframe() -> pd.DataFrame:
         for r in rows
     ]
     df = pd.DataFrame.from_records(records)
+    df["data_time"] = pd.to_datetime(df["data_time"])
     df["station_group"] = df["station_name"].map(STATION_GROUPS)
     return df
+
+
+def date_range_filter(df: pd.DataFrame, *, key: str = "dr") -> pd.DataFrame:
+    """기간 선택 UI를 그리고 선택 구간으로 필터링한 DataFrame을 반환한다.
+
+    프리셋(최근 7/30일·전체) + 시작/종료일 직접 선택. 계절성 등 기간 분석용.
+
+    Args:
+        df: data_time(datetime) 컬럼을 가진 DataFrame.
+        key: 위젯 중복 방지용 고유 키(페이지별로 다르게).
+    """
+    if df.empty:
+        return df
+    dmin = df["data_time"].min().date()
+    dmax = df["data_time"].max().date()
+
+    preset = st.radio(
+        "기간",
+        ["전체", "최근 7일", "최근 30일", "직접 설정"],
+        horizontal=True,
+        key=f"{key}_preset",
+    )
+    if preset == "전체":
+        start, end = dmin, dmax
+    elif preset == "최근 7일":
+        start, end = max(dmin, dmax - timedelta(days=6)), dmax
+    elif preset == "최근 30일":
+        start, end = max(dmin, dmax - timedelta(days=29)), dmax
+    else:  # 직접 설정
+        c1, c2 = st.columns(2)
+        start = c1.date_input(
+            "시작일", value=dmin, min_value=dmin, max_value=dmax, key=f"{key}_s"
+        )
+        end = c2.date_input(
+            "종료일", value=dmax, min_value=dmin, max_value=dmax, key=f"{key}_e"
+        )
+        if start > end:
+            start, end = end, start
+
+    mask = (df["data_time"].dt.date >= start) & (df["data_time"].dt.date <= end)
+    out = df[mask]
+    n_days = (end - start).days + 1
+    st.caption(
+        f"📅 {start} ~ {end} ({n_days}일) · {len(out):,}건 "
+        f"· 측정소당 평균 {len(out) // max(df['station_name'].nunique(), 1):,}건"
+    )
+    return out
 
 
 # ----------------------------------------------------------------------

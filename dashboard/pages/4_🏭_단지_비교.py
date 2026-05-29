@@ -16,6 +16,7 @@ import streamlit as st  # noqa: E402
 from dashboard._lib import (  # noqa: E402
     POLLUTANT_DISPLAY,
     STATION_GROUPS,
+    date_range_filter,
     load_dataframe,
     page_header,
     render_data_status,
@@ -54,6 +55,14 @@ group_table = pd.DataFrame(
 )
 st.dataframe(group_table, hide_index=True, use_container_width=True)
 
+st.divider()
+
+# 기간 필터 (계절성 비교)
+df = date_range_filter(df, key="cmp")
+if df.empty:
+    st.warning("선택한 기간에 데이터가 없습니다.")
+    render_footer()
+    st.stop()
 st.divider()
 
 pollutant = st.selectbox(
