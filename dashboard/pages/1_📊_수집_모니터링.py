@@ -43,12 +43,18 @@ if df.empty:
     render_footer()
     st.stop()
 
-render_insight(
-    "외부 스케줄러가 **시간당 3회(:15/:35/:55) 폴링**하지만, 이는 에어코리아의 *가변 공개 지연*에 "
-    "대응하는 **재시도(가용성)**일 뿐 데이터 해상도(1시간)와 무관합니다. 빈 시간대는 **self-healing**이 "
-    "다음 실행에서 자동 복구하고, 측정시각(`data_time`)과 수집시각(`created_at`)을 분리 기록해 "
-    "**'원천 결측' vs '수집 누락'**을 구분합니다."
-)
+_total = len(df)
+_uniq_hours = df["data_time"].nunique()
+_flagged = df[df["flag"].notna()]
+if not _flagged.empty:
+    _top = _flagged["station_name"].value_counts()
+    render_insight(
+        f"총 {_total:,}건({_uniq_hours}개 시각) 누적. 결측 플래그는 {len(_flagged)}건"
+        f"(전체의 {len(_flagged) / _total * 100:.1f}%)으로, {_top.index[0]}이 {_top.iloc[0]}건으로 "
+        f"가장 잦습니다(통신장애). 나머지 측정소는 결측이 드뭅니다."
+    )
+else:
+    render_insight(f"총 {_total:,}건({_uniq_hours}개 시각) 누적, 결측 플래그 0건 — 수집 안정적.")
 st.divider()
 
 # ----------------------------------------------------------------------

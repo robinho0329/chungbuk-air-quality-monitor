@@ -27,7 +27,7 @@ from src.analysis.control_chart import (  # noqa: E402
     ewma_chart,
     i_chart,
 )
-from src.analysis.residual_chart import residual_i_chart  # noqa: E402
+from src.analysis.residual_chart import lag1_acf, residual_i_chart  # noqa: E402
 
 st.set_page_config(page_title="관리도", page_icon="📈", layout="wide")
 df = load_dataframe()
@@ -45,11 +45,18 @@ if df.empty:
     render_footer()
     st.stop()
 
-render_insight(
-    "대기질은 **lag-1 자기상관이 0.9를 넘어** 전통 관리도가 거짓경보를 양산합니다(원시 이탈률 ~50%). "
-    "페이지 하단 **'자기상관 보정 잔차 관리도'**에서 보정 후 이탈률이 명목수준(~2%)으로 떨어지는 것을 확인하세요. "
-    "**잔차 관리도의 이탈만이 진짜 특수원인 후보**입니다 — 이것이 SPC를 자기상관 데이터에 올바르게 쓰는 방법입니다."
-)
+_acfs = []
+for _s in df["station_name"].unique():
+    _ser = df[df["station_name"] == _s].sort_values("data_time")["pm25"].dropna()
+    if len(_ser) > 30:
+        _acfs.append(lag1_acf(_ser.to_numpy()))
+if _acfs:
+    render_insight(
+        f"PM2.5의 lag-1 자기상관이 평균 {sum(_acfs) / len(_acfs):.2f}로 매우 강해, "
+        "독립(i.i.d.)을 가정하는 전통 관리도는 거짓경보를 양산합니다. 페이지 하단 "
+        "'자기상관 보정 잔차 관리도'에서 보정 전후 이탈률 차이를 확인하세요 — "
+        "잔차에 남는 이탈만이 진짜 특수원인 후보입니다."
+    )
 
 # ----------------------------------------------------------------------
 # 옵션

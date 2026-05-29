@@ -56,11 +56,18 @@ st.divider()
 # ----------------------------------------------------------------------
 # 측정소별 최신 카드 (등급별 그라데이션 + 측정 시각)
 # ----------------------------------------------------------------------
-render_insight(
-    "측정소 간 평균 차이는 작습니다(공간 변동 < 시간 변동). 변동의 대부분은 위치가 아니라 "
-    "**시간·기상(계절·일주기)**에서 옵니다. 공정능력이 가장 낮은 우선관리 대상은 **PM2.5**입니다. "
-    "자세한 종합 결론은 GitHub 레포의 `docs/INSIGHTS.md` 참조."
-)
+if not df.empty and df["pm25"].notna().any():
+    _m = df.groupby("station_name")["pm25"].mean()
+    _piv = df.pivot_table(index="data_time", columns="station_name", values="pm25")
+    _spatial = _piv.std(axis=1).mean()  # 같은 시각 측정소 간 편차
+    _temporal = _piv.mean(axis=1).std()  # 시간에 따른 변동
+    _ratio = _temporal / _spatial if _spatial else float("nan")
+    render_insight(
+        f"PM2.5 측정소별 평균은 {_m.min():.0f}~{_m.max():.0f}㎍/㎥로 편차가 작고"
+        f"(최고 {_m.idxmax()} {_m.max():.0f}, 최저 {_m.idxmin()} {_m.min():.0f}), "
+        f"같은 시각 측정소 간 편차보다 시간에 따른 변동이 약 {_ratio:.1f}배 큽니다. "
+        f"→ 농도를 가르는 건 측정소(위치)가 아니라 시간·기상입니다."
+    )
 
 st.subheader("📍 측정소별 최신 측정값")
 

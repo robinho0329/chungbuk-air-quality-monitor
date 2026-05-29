@@ -155,8 +155,11 @@ def load_dataframe() -> pd.DataFrame:
 
 
 def render_insight(body: str) -> None:
-    """페이지 인사이트 콜아웃 (테마 안전). docs/INSIGHTS.md 핵심을 페이지 맥락에 연결."""
-    st.info(f"💡 **인사이트** — {body}")
+    """페이지 인사이트 콜아웃 (테마 안전, 마크다운 미사용 = 별표 노출 방지).
+
+    body에는 그 페이지 데이터를 실제로 분석한 결과(수치·발견)를 평문으로 전달한다.
+    """
+    st.info(f"💡 {body}")
 
 
 def date_range_filter(df: pd.DataFrame, *, key: str = "dr") -> pd.DataFrame:

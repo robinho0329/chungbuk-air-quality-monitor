@@ -24,6 +24,11 @@ from dashboard._lib import (  # noqa: E402
     render_insight,
     render_sidebar,
 )
+from src.analysis.hypothesis_test import (  # noqa: E402
+    InsufficientSampleError,
+    industrial_vs_baseline,
+)
+from src.config import BASELINE_GROUP, INDUSTRIAL_GROUP  # noqa: E402
 
 st.set_page_config(page_title="단지 비교", page_icon="🏭", layout="wide")
 df = load_dataframe()
@@ -42,11 +47,34 @@ if df.empty:
     render_footer()
     st.stop()
 
-render_insight(
-    "처음 가설('산단>거주지')은 **기각이 아니라 재정의**됩니다. 산단군 PM2.5·PM10이 통계적으론 높지만 **효과크기가 작고"
-    "(위치 설명력 5% 미만)**, **NO2·CO는 오히려 거주지가 높습니다**(교통·난방 등 생활 연소). 게다가 **주중=주말**이라 "
-    "산업·교통보다 기상이 지배적입니다. → '산단=오염'이 아니라 **오염물질별 발생원이 다르다**가 정직한 결론입니다."
-)
+try:
+    _r = industrial_vs_baseline(
+        df, "pm25", STATION_GROUPS, INDUSTRIAL_GROUP, BASELINE_GROUP
+    )
+    _res_higher = []
+    for _p in ["pm10", "pm25", "o3", "no2", "so2", "co"]:
+        try:
+            _rr = industrial_vs_baseline(
+                df, _p, STATION_GROUPS, INDUSTRIAL_GROUP, BASELINE_GROUP
+            )
+            if _rr.significant and _rr.diff < 0:
+                _res_higher.append(POLLUTANT_DISPLAY.get(_p, _p).split(" ")[0])
+        except (InsufficientSampleError, ValueError):
+            pass
+    _msg = (
+        f"PM2.5는 산단군이 거주지보다 평균 {_r.diff:+.1f}㎍/㎥ 높지만 효과크기는 "
+        f"{_r.effect_label()}(d={_r.cohens_d:.2f})로 작습니다. "
+    )
+    if _res_higher:
+        _msg += (
+            f"반대로 {', '.join(_res_higher)}는 거주지가 더 높아(교통·난방 등 생활 연소), "
+            "'산단=오염'이 아니라 오염물질별 발생원이 다릅니다."
+        )
+    else:
+        _msg += "오염물질별로 산단·거주지 우위가 갈립니다."
+    render_insight(_msg)
+except (InsufficientSampleError, ValueError):
+    render_insight("표본이 더 쌓이면 산단 vs 거주지 통계 검정 결과가 여기에 표시됩니다.")
 
 # ----------------------------------------------------------------------
 # 측정소 그룹 안내

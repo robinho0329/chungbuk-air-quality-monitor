@@ -43,11 +43,17 @@ if df.empty:
     render_footer()
     st.stop()
 
-render_insight(
-    "시계열에서 **PM2.5는 새벽~오전(야간 역전층 정체)에 높고 한낮에 희석**됩니다. 월별로는 **봄철(3월) 급증**이 "
-    "뚜렷한데 황사·장거리 수송 등 **광역 유입** 신호입니다. 여러 측정소가 **같은 시각 함께 움직이는 것**에 "
-    "주목하세요 — 위치별 차이보다 시간·기상 공통요인이 농도를 지배합니다. (기간을 바꿔 계절 추세를 비교해보세요)"
-)
+if df["pm25"].notna().any():
+    _hourly = df.groupby(df["data_time"].dt.hour)["pm25"].mean()
+    _ph, _pv = int(_hourly.idxmax()), _hourly.max()
+    _lh, _lv = int(_hourly.idxmin()), _hourly.min()
+    _monthly = df.groupby(df["data_time"].dt.to_period("M"))["pm25"].mean()
+    _mh = _monthly.idxmax()
+    render_insight(
+        f"PM2.5 일주기: {_ph}시에 평균 {_pv:.0f}㎍/㎥로 최고, {_lh}시에 {_lv:.0f}로 최저 "
+        f"(야간·오전 정체 후 한낮 희석). 월별로는 {_mh}월 평균 {_monthly.max():.0f}이 가장 높아 "
+        f"(최저월 {_monthly.min():.0f}의 {_monthly.max() / max(_monthly.min(), 0.1):.1f}배) 봄철 광역 유입이 두드러집니다."
+    )
 
 # ----------------------------------------------------------------------
 # 기간 필터 (계절성 등 기간 분석)

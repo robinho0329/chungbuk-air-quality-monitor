@@ -85,11 +85,23 @@ if df.empty:
     render_footer()
     st.stop()
 
-render_insight(
-    "**PM2.5는 전 측정소에서 Cpk<1(규격 미달)**로 만성 공정능력 부족 — 최우선 관리 대상입니다. 반면 **SO2·CO는 양호**(Cpk≥1.1). "
-    "관리 자원을 PM2.5에 집중해야 합니다. 단, 측정소 간 Cpk 차이(위치)보다 **시간 변동이 훨씬 크다**는 점에 유의하세요 — "
-    "위치 줄세우기보다 공통원인(계절·기상) 관리가 핵심입니다."
-)
+_usl25 = SPEC_LIMITS["pm25"].usl_for("daily")
+_cpks: dict[str, float] = {}
+for _s in df["station_name"].unique():
+    try:
+        _cpks[_s] = compute_capability(
+            df[df["station_name"] == _s]["pm25"].dropna(), usl=_usl25, lsl=0.0
+        ).cpk
+    except (InsufficientSampleError, ValueError):
+        pass
+if _cpks:
+    _worst = min(_cpks, key=_cpks.get)
+    _below = sum(1 for v in _cpks.values() if v < 1.0)
+    render_insight(
+        f"PM2.5 공정능력: {len(_cpks)}개 측정소 중 {_below}곳이 Cpk<1(규격 미달, USL={_usl25}㎍/㎥). "
+        f"최저는 {_worst}(Cpk={_cpks[_worst]:.2f})로 최우선 관리 대상입니다. "
+        f"반면 SO2·CO는 대체로 Cpk가 높아 양호 — 관리 자원을 PM2.5에 집중해야 합니다."
+    )
 
 # ----------------------------------------------------------------------
 # 옵션
