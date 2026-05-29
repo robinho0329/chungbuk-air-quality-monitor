@@ -51,15 +51,15 @@ QC/API 생산관리 직무에서 핵심 역량인 **SPC(통계적 공정관리)*
 
 ```mermaid
 flowchart LR
-    A[에어코리아 OpenAPI] -->|매시 자동(외부 cron)| B[GitHub Actions Runner]
-    B -->|uv + Python 3.14| C[scripts/collect_once.py]
-    C -->|INSERT OR IGNORE| D[(SQLite data.db)]
-    D -->|auto commit & push| E[GitHub Repo]
-    E -->|auto redeploy| F[Streamlit Cloud]
-    F -->|시각화| G[대시보드 6 페이지]
+    A["에어코리아 OpenAPI"] -->|"매시 자동 외부 cron"| B["GitHub Actions Runner"]
+    B -->|"uv + Python 3.14"| C["scripts/collect_once.py"]
+    C -->|"INSERT OR IGNORE"| D[("SQLite data.db")]
+    D -->|"auto commit and push"| E["GitHub Repo"]
+    E -->|"auto redeploy"| F["Streamlit Cloud"]
+    F -->|"시각화"| G["대시보드 6 페이지"]
 
-    H[로컬 PC] -.->|선택: 분석| D
-    H -.->|pytest 174건| I[CI 검증]
+    H["로컬 PC"] -.->|"선택: 분석"| D
+    H -.->|"pytest 174건"| I["CI 검증"]
 ```
 
 **핵심 특징**:
