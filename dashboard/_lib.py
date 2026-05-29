@@ -103,17 +103,20 @@ _COLLECT_BUFFER_MIN = 5
 
 
 def next_cron_eta_kst() -> str:
-    """다음 자동 수집 반영 예정 시각 (KST). cron-job.org가 매시 :15/:35/:55 트리거."""
+    """다음 자동 수집 반영 예정 시각 (KST). cron-job.org가 매시 :15/:35/:55 트리거.
+
+    다음 트리거 시각(슬롯) + 버퍼를 timedelta로 더해 분(分) 60 넘침을 안전 처리.
+    """
     now = now_kst()
-    buffered = [m + _COLLECT_BUFFER_MIN for m in _COLLECT_MINUTES]
-    for minute in buffered:
-        if now.minute < minute:
-            eta = now.replace(minute=minute, second=0, microsecond=0)
-            break
-    else:
-        eta = (now + timedelta(hours=1)).replace(
-            minute=buffered[0], second=0, microsecond=0
-        )
+    # 각 슬롯의 '다음 발생' 시각을 만들고 그중 가장 이른 것을 고른다.
+    candidates = []
+    for m in _COLLECT_MINUTES:
+        c = now.replace(minute=m, second=0, microsecond=0)
+        if c <= now:
+            c += timedelta(hours=1)
+        candidates.append(c)
+    next_fire = min(candidates)
+    eta = next_fire + timedelta(minutes=_COLLECT_BUFFER_MIN)
     return eta.strftime("%H:%M KST")
 
 
