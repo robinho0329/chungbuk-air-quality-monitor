@@ -30,6 +30,7 @@ from dashboard._lib import (  # noqa: E402
     render_footer,
     render_sidebar,
 )
+from src.config import TARGET_STATIONS  # noqa: E402
 
 # 페이지 설정 (반드시 첫 streamlit 호출이어야 함)
 st.set_page_config(
@@ -55,12 +56,11 @@ st.divider()
 # 측정소별 최신 카드 (등급별 그라데이션 + 측정 시각)
 # ----------------------------------------------------------------------
 st.subheader("📍 측정소별 최신 측정값")
-TARGET_STATIONS = ("오창읍", "복대동", "오송읍", "용암동")
 
 if df.empty:
     st.warning("아직 데이터가 없습니다.")
 else:
-    cols = st.columns(4)
+    cols = st.columns(len(TARGET_STATIONS))
     for col, station in zip(cols, TARGET_STATIONS, strict=False):
         sub = df[df["station_name"] == station]
         if sub.empty:
