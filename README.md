@@ -49,17 +49,32 @@ QC/API 생산관리 직무에서 핵심 역량인 **SPC(통계적 공정관리)*
 
 ## 🏗️ 시스템 아키텍처
 
+> 트리거 체인의 시작은 **외부 스케줄러(cron-job.org)** 다. GitHub 내장 schedule은 best-effort라
+> 드롭이 잦아 fallback(점선)으로만 둔다. 에어코리아 OpenAPI는 진입점이 아니라 `collect_once.py`가
+> 호출하는 데이터 소스다.
+
 ```mermaid
 flowchart LR
-    A["에어코리아 OpenAPI"] -->|"매시 자동 외부 cron"| B["GitHub Actions Runner"]
-    B -->|"uv + Python 3.14"| C["scripts/collect_once.py"]
-    C -->|"INSERT OR IGNORE"| D[("SQLite data.db")]
-    D -->|"auto commit and push"| E["GitHub Repo"]
-    E -->|"auto redeploy"| F["Streamlit Cloud"]
-    F -->|"시각화"| G["대시보드 6 페이지"]
+    CRON["cron-job.org<br/>외부 스케줄러 매시 :15/:35/:55"]
+    SCHED["GitHub 내장 schedule<br/>fallback · best-effort"]
+    GHA["GitHub Actions Runner<br/>collect.yml"]
+    COLLECT["collect_once.py<br/>실시간 + self-heal 백필"]
+    API[("에어코리아 OpenAPI")]
+    DB[("SQLite data.db")]
+    REPO["GitHub Repo<br/>commit and push"]
+    CLOUD["Streamlit Cloud<br/>push 감지 자동 재배포"]
+    DASH["대시보드 6페이지"]
+    LOCAL["로컬 PC<br/>분석 · pytest 174건 · 수집 X"]
 
-    H["로컬 PC"] -.->|"선택: 분석"| D
-    H -.->|"pytest 174건"| I["CI 검증"]
+    CRON -->|"workflow_dispatch REST API"| GHA
+    SCHED -.->|"fallback"| GHA
+    GHA --> COLLECT
+    API -.->|"데이터 조회"| COLLECT
+    COLLECT -->|"INSERT OR IGNORE"| DB
+    DB --> REPO
+    REPO -->|"push 감지"| CLOUD
+    CLOUD --> DASH
+    LOCAL -.->|"읽기 · 분석"| REPO
 ```
 
 **핵심 특징**:
