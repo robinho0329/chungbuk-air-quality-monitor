@@ -80,6 +80,22 @@ Body (JSON):
 
 ---
 
+## (추가) 일일 리포트 루틴도 외부 cron으로
+
+`daily_dev_loop.yml`(pytest + 통계 + Cpk + 가설 리포트)도 내장 schedule이 아니라 외부 cron으로
+트리거해 신뢰성을 맞춘다. **수집 작업을 복제 → URL과 스케줄만 변경**:
+
+1. cron-job.org에서 기존 `chungbuk 대기질 수집` 작업 복제(또는 새로 Create cronjob)
+2. **URL** (workflow 파일명만 다름):
+   ```
+   https://api.github.com/repos/robinho0329/chungbuk-air-quality-monitor/actions/workflows/daily_dev_loop.yml/dispatches
+   ```
+3. **Schedule**: 매일 1회 — Custom `15 0 * * *` (또는 cron-job.org Time zone=Asia/Seoul로 "매일 09:15")
+4. **Headers / Body / Method**: 수집 작업과 동일 (POST, Authorization Bearer PAT, Accept, X-GitHub-Api-Version, body `{"ref":"main"}`)
+5. TEST RUN → 204 확인 → CREATE
+
+> 같은 PAT 재사용 가능(권한이 이미 Actions write라 두 워크플로 모두 dispatch 가능). 검증: `gh api` 호출 시 204 확인 완료.
+
 ## 대안 (참고)
 
 - **EasyCron / Google Cloud Scheduler / 본인 상시구동 서버 crontab** 도 동일하게 dispatch API 호출 가능.

@@ -12,9 +12,11 @@ name: 🤖 데일리 자율 개발 루프
 
 on:
   schedule:
-    # KST 09:15 = UTC 00:15. GitHub Actions cron은 보통 5~15분 지연됨.
-    - cron: '15 0 * * *'
-  workflow_dispatch:
+    # [Fallback] GitHub 내장 schedule은 best-effort라 지연·드롭이 잦다(실측 4h+ 지연).
+    # 신뢰성은 외부 스케줄러(cron-job.org → workflow_dispatch)에 맡기고, 이 schedule은
+    # 외부가 죽었을 때의 2차 안전망. docs/EXTERNAL_SCHEDULER_SETUP.md 참조.
+    - cron: '15 0 * * *'  # KST 09:15
+  workflow_dispatch:  # [Primary] 외부 cron(cron-job.org)이 매일 1회 호출 + UI 수동
 
 permissions:
   contents: write
