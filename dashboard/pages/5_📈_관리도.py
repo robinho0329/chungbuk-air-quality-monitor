@@ -28,6 +28,11 @@ from src.analysis.control_chart import (  # noqa: E402
     i_chart,
 )
 from src.analysis.residual_chart import lag1_acf, residual_i_chart  # noqa: E402
+from src.analysis.western_electric import (  # noqa: E402
+    RULE_DESCRIPTIONS,
+    we_rules,
+    InsufficientSampleError as WEInsufficientSampleError,
+)
 
 st.set_page_config(page_title="관리도", page_icon="📈", layout="wide")
 df = load_dataframe()
@@ -281,5 +286,47 @@ except InsufficientSampleError:
     st.info("잔차 관리도는 표본 30건 이상부터 표시됩니다.")
 except ValueError as e:
     st.warning(f"잔차 관리도 계산 불가: {e}")
+
+# ----------------------------------------------------------------------
+# Western Electric Rules 판정 섹션
+# ----------------------------------------------------------------------
+st.divider()
+st.subheader("📋 Western Electric Rules (WE Rules) 비랜덤 패턴 판정")
+st.caption(
+    "단순 3σ 이탈(Rule 1) 외에 추세·한쪽 쏠림·허깅·지그재그 등 **7가지 추가 패턴**을 자동 탐지합니다. "
+    "I-Chart 원시 측정값 기준으로 적용합니다."
+)
+
+try:
+    import pandas as _pd  # noqa: E402 (이미 상단 import 있지만 지역 alias 방지)
+    we_res = we_rules(series)
+
+    if we_res.is_in_control:
+        st.success(f"✅ {we_res.summary()}")
+    else:
+        st.warning(f"⚠️ {we_res.summary()}")
+
+    rule_rows = []
+    for r in range(1, 9):
+        cnt = len(we_res.violations_by_rule.get(r, []))
+        rule_rows.append({
+            "룰": RULE_DESCRIPTIONS[r],
+            "위반 건수": cnt,
+            "상태": "🔴 위반" if cnt > 0 else "🟢 통과",
+        })
+    st.dataframe(_pd.DataFrame(rule_rows), use_container_width=True, hide_index=True)
+
+    all_we_idx = we_res.all_violation_indices
+    if all_we_idx:
+        st.caption(
+            f"📌 WE Rules 전체 기준으로 **{len(all_we_idx)}개 시점**에서 비랜덤 패턴이 탐지됩니다. "
+            "자기상관이 있는 경우 Rule 3·4·6 등의 거짓경보가 늘어날 수 있으므로 "
+            "잔차 관리도 섹션과 함께 해석하세요."
+        )
+
+except WEInsufficientSampleError:
+    st.info("WE Rules는 최소 표본 2건부터 적용됩니다.")
+except ValueError as e:
+    st.warning(f"WE Rules 계산 불가: {e}")
 
 render_footer()
