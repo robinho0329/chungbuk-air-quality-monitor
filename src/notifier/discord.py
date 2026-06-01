@@ -23,6 +23,47 @@ _COLOR_RED = 0xE74C3C     # 이상 (위험)
 _COLOR_YELLOW = 0xF39C12  # 경고 (주의)
 _COLOR_GREEN = 0x2ECC71   # 정상
 
+# Discord Embed 제약 (API 한계)
+_FIELD_VALUE_MAX = 1024   # 필드 value 최대 길이
+_MAX_LINES_PER_FIELD = 12  # 한 필드에 표시할 최대 항목 수 (초과분은 "외 N건")
+
+
+def _join_capped(
+    lines: list[str],
+    max_lines: int = _MAX_LINES_PER_FIELD,
+    max_chars: int = _FIELD_VALUE_MAX,
+) -> str:
+    """라인 리스트를 Discord 필드 제약(1024자) 내로 합친다.
+
+    max_lines를 초과하면 상위 항목만 표시하고 "...외 N건"을 덧붙인다.
+    그래도 max_chars를 넘으면 들어갈 수 있는 만큼만 표시한다.
+
+    Args:
+        lines: 표시할 라인 리스트.
+        max_lines: 표시할 최대 라인 수.
+        max_chars: 필드 value 최대 글자 수.
+
+    Returns:
+        제약 내로 합쳐진 문자열.
+    """
+    total = len(lines)
+    shown = lines[:max_lines]
+    remainder = total - len(shown)
+
+    def _assemble(items: list[str], extra: int) -> str:
+        body = "\n".join(items)
+        if extra > 0:
+            body += f"\n…외 {extra}건"
+        return body
+
+    text = _assemble(shown, remainder)
+    # 글자 수 초과 시 라인을 더 줄임
+    while len(text) > max_chars and shown:
+        shown.pop()
+        remainder = total - len(shown)
+        text = _assemble(shown, remainder)
+    return text
+
 
 @dataclass
 class AlertField:
@@ -133,28 +174,28 @@ def build_spc_alert(
     fields: list[AlertField] = []
 
     if cpk_violations:
-        cpk_lines = []
-        for v in cpk_violations:
-            cpk_lines.append(
-                f"**{v['station']}** · {v['pollutant'].upper()}  "
-                f"Cpk={v['cpk']:.3f} < {v['threshold']:.2f}"
-            )
+        # Cpk가 낮은 순(가장 심각한 것)으로 정렬
+        sorted_cpk = sorted(cpk_violations, key=lambda v: v["cpk"])
+        cpk_lines = [
+            f"**{v['station']}** · {v['pollutant'].upper()}  "
+            f"Cpk={v['cpk']:.3f} < {v['threshold']:.2f}"
+            for v in sorted_cpk
+        ]
         fields.append(AlertField(
             name=f"📐 Cpk 임계 미달 ({len(cpk_violations)}건)",
-            value="\n".join(cpk_lines),
+            value=_join_capped(cpk_lines),
             inline=False,
         ))
 
     if we_violations:
-        we_lines = []
-        for v in we_violations:
-            rules_str = ", ".join(f"Rule {r}" for r in sorted(v["rules"]))
-            we_lines.append(
-                f"**{v['station']}** · {v['pollutant'].upper()}  [{rules_str}]"
-            )
+        we_lines = [
+            f"**{v['station']}** · {v['pollutant'].upper()}  "
+            f"[{', '.join(f'R{r}' for r in sorted(v['rules']))}]"
+            for v in we_violations
+        ]
         fields.append(AlertField(
             name=f"📋 WE Rules 위반 ({len(we_violations)}건)",
-            value="\n".join(we_lines),
+            value=_join_capped(we_lines),
             inline=False,
         ))
 
