@@ -77,3 +77,13 @@ jobs:
             git pull --rebase --autostash origin main 2>/dev/null || true
             git push origin main
           fi
+
+      - name: 🔔 SPC 이상 탐지 알림 (Cpk 미달 / WE Rules 위반)
+        if: ${{ env.DISCORD_WEBHOOK_URL != '' }}
+        env:
+          AIRKOREA_API_KEY: ${{ secrets.AIRKOREA_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: "utf-8"
+        run: uv run python flows/alert_flow.py || true
+        # || true: 알림 실패해도 수집 워크플로우 전체는 성공으로 처리
