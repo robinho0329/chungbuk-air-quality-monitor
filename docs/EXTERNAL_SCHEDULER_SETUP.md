@@ -96,6 +96,23 @@ Body (JSON):
 
 > 같은 PAT 재사용 가능(권한이 이미 Actions write라 두 워크플로 모두 dispatch 가능). 검증: `gh api` 호출 시 204 확인 완료.
 
+## (추가) 포트폴리오 PPT 루틴도 외부 cron으로 (주 1회)
+
+`portfolio_ppt.yml`(SPC 산출물을 슬라이드 덱으로 묶어 `reports/portfolio/`에 생성)도
+같은 방식으로 트리거한다. **주기만 주 1회로 다르다**:
+
+1. cron-job.org에서 새 cronjob Create (또는 기존 작업 복제)
+2. **URL** (workflow 파일명만 다름):
+   ```
+   https://api.github.com/repos/robinho0329/chungbuk-air-quality-monitor/actions/workflows/portfolio_ppt.yml/dispatches
+   ```
+3. **Schedule**: 매주 월요일 1회 — Custom `30 0 * * 1` (또는 Time zone=Asia/Seoul로 "매주 월요일 09:30")
+4. **Headers / Body / Method**: 수집 작업과 동일 (POST, Authorization Bearer PAT, Accept, X-GitHub-Api-Version, body `{"ref":"main"}`)
+5. TEST RUN → 204 확인 → CREATE
+
+> 같은 PAT 재사용 가능. 산출물: `reports/portfolio/YYYY-MM-DD.pptx` + `latest.pptx` (16:9, 7슬라이드).
+> 차트 한글은 CI가 `fonts-nanum`을 설치해 렌더하므로 폰트 깨짐 없음.
+
 ## 대안 (참고)
 
 - **EasyCron / Google Cloud Scheduler / 본인 상시구동 서버 crontab** 도 동일하게 dispatch API 호출 가능.
