@@ -149,6 +149,31 @@ async function build() {
     pageNum(s, 2);
   }
 
+  // ───────────────────────── S2.5 분석 배경 & 동기
+  {
+    const s = pres.addSlide();
+    s.background = { color: WHITE };
+    spine(s);
+    header(s, "분석 배경 & 동기", "왜 이 분석을 시작했는가");
+    govBar(s, "공개 대기질 데이터를 ‘제조 공정’에 빗대어, QC·생산관리 직무 역량을 실데이터로 증명하기 위해 시작했다");
+    const motives = [
+      [IC.bullseye, "직무 역량 입증", "QC/API 생산관리 직무 지원 — SPC·6시그마·데이터 자동화 역량을 ‘말’이 아닌 실데이터·실코드로 증명", COBALT],
+      [IC.flask, "메타포로 끝까지 구현", "사내 생산 데이터가 없어도, 공개 대기질 API를 공정·품질특성·규격에 매핑해 공정관리 기법을 완주", TEAL],
+      [IC.wind, "지역 문제의식", "충북 청주 산단(오창·오송 등) 인근 대기질이 거주지보다 실제로 나쁜지, 데이터로 직접 검증하고 싶었다", ORANGE],
+      [IC.cloud, "자동화 파이프라인 경험", "수집→분석→알림까지 무중단·무비용으로 돌아가는 엔드투엔드 데이터 파이프라인을 직접 설계·운영", "6D4AE0"],
+    ];
+    const mx = [0.7, 6.85], mw = 5.95, mh = 1.92, my = [2.4, 4.5];
+    motives.forEach(([ic, t, d, ac], i) => {
+      const x = mx[i % 2], y = my[Math.floor(i / 2)];
+      card(s, x, y, mw, mh, ac);
+      s.addShape(pres.shapes.OVAL, { x: x + 0.35, y: y + 0.55, w: 0.95, h: 0.95, fill: { color: LAV } });
+      s.addImage({ data: ic, x: x + 0.59, y: y + 0.79, w: 0.47, h: 0.47 });
+      s.addText(t, { x: x + 1.55, y: y + 0.42, w: mw - 1.8, h: 0.45, fontSize: 16.5, bold: true, color: INK, valign: "middle", fontFace: F, margin: 0 });
+      s.addText(d, { x: x + 1.55, y: y + 0.92, w: mw - 1.8, h: 0.85, fontSize: 12, color: BODY, lineSpacingMultiple: 1.28, fontFace: F, margin: 0, valign: "top" });
+    });
+    pageNum(s, 3);
+  }
+
   // ───────────────────────── S3 문제 정의
   {
     const s = pres.addSlide();
@@ -181,7 +206,7 @@ async function build() {
       { text: "PM2.5·PM10 전 측정소 ‘불량 위험’ 식별", options: { color: INK, bold: true, breakLine: true } },
       { text: "잔차 관리도로 거짓경보 46% → 2% 개선", options: { color: INK, bold: true } },
     ], { x: 7.15, y: 5.6, w: 5.4, h: 0.85, fontSize: 13.5, lineSpacingMultiple: 1.25, fontFace: F, margin: 0, valign: "top" });
-    pageNum(s, 3);
+    pageNum(s, 4);
   }
 
   // ───────────────────────── S4 측정 시스템 — 대상
@@ -219,7 +244,7 @@ async function build() {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.7, y: 5.6, w: 12.1, h: 0.95, fill: { color: LAV }, rectRadius: 0.08 });
     pill(s, 0.95, 5.83, 1.5, 0.48, "인사이트", COBALT, WHITE, 12);
     s.addText("6종 × 5측정소 = 30개 ‘공정-품질특성’ 조합을 1시간 해상도로 상시 모니터링", { x: 2.65, y: 5.6, w: 10, h: 0.95, fontSize: 13.5, bold: true, color: INK, valign: "middle", fontFace: F, margin: 0 });
-    pageNum(s, 4);
+    pageNum(s, 5);
   }
 
   // ───────────────────────── S5 아키텍처
@@ -256,7 +281,7 @@ async function build() {
       border: { type: "solid", color: BORDER, pt: 1 },
       align: "left",
     });
-    pageNum(s, 5);
+    pageNum(s, 6);
   }
 
   // ───────────────────────── S6 수집 성과
@@ -285,7 +310,7 @@ async function build() {
       { text: "self-healing", options: { bold: true, color: INK } },
       { text: " — cron 드롭 시 다음 실행이 직전 24h 갭을 멱등 복구해 결측을 메움.", options: { color: BODY } },
     ], { x: 8.8, y: 5.05, w: 3.75, h: 1.0, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
-    pageNum(s, 6);
+    pageNum(s, 7);
   }
 
   // ───────────────────────── S7 데이터 점검
@@ -334,7 +359,7 @@ async function build() {
       s.addText(it[0], { x: 7.5, y, w: 5.0, h: 0.3, fontSize: 13, bold: true, color: INK, fontFace: F, margin: 0 });
       s.addText(it[1], { x: 7.5, y: y + 0.3, w: 5.1, h: 0.45, fontSize: 11.5, color: BODY, fontFace: F, margin: 0, valign: "top" });
     });
-    pageNum(s, 8);
+    pageNum(s, 9);
   }
 
   // ───────────────────────── S9 Cpk 분석
@@ -352,7 +377,7 @@ async function build() {
     card(s, 8.85, 4.45, 3.95, 2.25);
     s.addText("관리 양호 — SO₂ · CO", { x: 9.1, y: 4.72, w: 3.5, h: 0.4, fontSize: 14.5, bold: true, color: TEAL, fontFace: F, margin: 0 });
     s.addText("Cpk ≥ 1.2로 규격 대비 여유. Cp/Cpk·USL은 대기환경보전법 환경기준(일·연평균) 기반으로 산출.", { x: 9.1, y: 5.2, w: 3.5, h: 1.4, fontSize: 12.5, color: BODY, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
-    pageNum(s, 9);
+    pageNum(s, 10);
   }
 
   // ───────────────────────── S10 잔차 관리도 결과
@@ -399,7 +424,7 @@ async function build() {
     ], { x: 8.3, y: 4.05, w: 4.55, h: 1.3, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
     pill(s, 8.3, 5.55, 2.0, 0.5, "가설 검정 자동화", COBALT, WHITE, 12.5);
     s.addText("daily 루프가 MD·Word 리포트 자동 생성", { x: 8.3, y: 6.12, w: 4.55, h: 0.4, fontSize: 11, italic: true, color: MUTE, fontFace: F, margin: 0 });
-    pageNum(s, 11);
+    pageNum(s, 12);
   }
 
   // ───────────────────────── S12 이상탐지 & 알림
@@ -426,7 +451,7 @@ async function build() {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.7, y: 6.1, w: 12.1, h: 0.82, fill: { color: LAV }, rectRadius: 0.08 });
     pill(s, 0.92, 6.27, 1.5, 0.48, "Control", COBALT, WHITE, 12);
     s.addText("DMAIC의 Control 단계 — 탐지에서 알림까지 완전 자동화로 지속 모니터링 체계 완성", { x: 2.6, y: 6.1, w: 10, h: 0.82, fontSize: 13, bold: true, color: INK, valign: "middle", fontFace: F, margin: 0 });
-    pageNum(s, 12);
+    pageNum(s, 13);
   }
 
   // ───────────────────────── S13 결론
@@ -459,7 +484,7 @@ async function build() {
   }
 
   await pres.writeFile({ fileName: "포트폴리오_충북대기질_SPC_v2.pptx" });
-  console.log("✅ 생성 완료: 포트폴리오_충북대기질_SPC_v2.pptx (13 슬라이드)");
+  console.log("✅ 생성 완료: 포트폴리오_충북대기질_SPC_v2.pptx (14 슬라이드)");
 }
 
 build().catch((e) => { console.error(e); process.exit(1); });
