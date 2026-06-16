@@ -106,7 +106,7 @@ async function build() {
     s.addImage({ data: IC.gauge, x: 1.15, y: 2.5, w: 1.25, h: 1.25 });
     s.addText("AIR QUALITY · SPC", { x: 0.55, y: 4.1, w: 2.9, h: 0.4, fontSize: 13, bold: true, color: "C9D4FF", align: "center", charSpacing: 2, fontFace: F, margin: 0 });
     // 우측 본문
-    s.addText("DATA PORTFOLIO  |  QC · API 생산관리", { x: 4.1, y: 1.55, w: 8.5, h: 0.4, fontSize: 13, bold: true, color: COBALT, charSpacing: 1, fontFace: F, margin: 0 });
+    s.addText("DATA PORTFOLIO  |  품질데이터 · SPC 엔지니어 (QC · API 생산관리)", { x: 4.1, y: 1.55, w: 8.8, h: 0.4, fontSize: 13, bold: true, color: COBALT, charSpacing: 1, fontFace: F, margin: 0 });
     s.addText("충북권 산업단지\n대기질 SPC 모니터링 시스템", { x: 4.1, y: 2.15, w: 8.8, h: 1.9, fontSize: 40, bold: true, color: INK, lineSpacingMultiple: 1.05, fontFace: F, margin: 0 });
     s.addText("통계적 공정관리(SPC) · 6시그마 DMAIC · 데이터 파이프라인 자동화", { x: 4.12, y: 4.25, w: 8.6, h: 0.5, fontSize: 16, color: BODY, fontFace: F, margin: 0 });
     s.addShape(pres.shapes.LINE, { x: 4.12, y: 5.15, w: 8.4, h: 0, line: { color: BORDER, width: 1.5 } });
@@ -131,10 +131,10 @@ async function build() {
     const items = [
       ["01", "문제 정의", "산단 대기질 vs 거주지, SPC 상시 감시"],
       ["02", "측정 시스템", "측정 지표·측정소, 무중단 수집 아키텍처"],
-      ["03", "데이터 수집·점검", "11주 누적, 결측·이상치 점검"],
+      ["03", "데이터 수집·점검", "108일 누적, 결측·이상치 점검"],
       ["04", "관리 기준 설정", "전통 관리도 vs 자기상관 보정 잔차 관리도"],
       ["05", "통계 분석", "Cp/Cpk · 잔차 관리도 · 단지 비교 검정"],
-      ["06", "이상탐지·알림·결론", "WE Rules · IsolationForest · Discord"],
+      ["06", "이상탐지·알림 · 현업 전이", "WE Rules·IForest·Discord → GMP 품질관리 전이·결론"],
     ];
     const colX = [0.7, 6.95], cw = 5.65, ch = 1.35, gy = 0.32, y0 = 2.05;
     items.forEach((it, i) => {
@@ -180,7 +180,7 @@ async function build() {
     s.background = { color: WHITE };
     spine(s);
     header(s, "문제 정의", "주제 · 분석 배경 · 분석 목표");
-    govBar(s, "대기질을 제조 공정에 빗대어 SPC로 상시 감시 — 산단 인근이 거주지보다 나쁜가?");
+    govBar(s, "산단 인근 대기질이 거주지보다 통계적으로 나쁜지, 어느 지표를 우선 관리해야 하는지 규명한다");
     const cards = [
       [IC.industry, "분석 주제", "측정소=공정 라인, 오염물질=품질특성(CQA), 환경기준=규격(USL)으로 매핑한 메타포 프로젝트", COBALT],
       [IC.chartLine, "분석 목표", "산단 영향군 vs 거주지 평균차 통계 검정, 공정능력(Cpk) 산출, 우선 관리 지표 도출", TEAL],
@@ -231,7 +231,7 @@ async function build() {
       s.addText(p[0], { x, y: y + 0.16, w: pw, h: 0.5, fontSize: 20, bold: true, color: warn ? RED : COBALT, align: "center", fontFace: F, margin: 0 });
       s.addText(p[1], { x: x + 0.1, y: y + 0.68, w: pw - 0.2, h: 0.38, fontSize: 10.5, color: BODY, align: "center", fontFace: F, margin: 0 });
     });
-    s.addText("USL = 대기환경보전법 환경기준 · LSL = 0 (낮을수록 좋음)", { x: 0.7, y: 4.95, w: 6.2, h: 0.35, fontSize: 11, italic: true, color: MUTE, fontFace: F, margin: 0 });
+    s.addText("USL=대기환경보전법 환경기준 · LSL=0 (단측 규격). 실제 배치공정 양측 규격(USL+LSL)에도 동일 Cpk 산식 적용 가능.", { x: 0.7, y: 4.95, w: 6.3, h: 0.55, fontSize: 10.5, italic: true, color: MUTE, lineSpacingMultiple: 1.15, fontFace: F, margin: 0, valign: "top" });
     // 우: 측정소 그룹
     s.addText("측정소 (공정 라인)", { x: 7.15, y: 1.65, w: 5, h: 0.4, fontSize: 15, bold: true, color: COBALT, fontFace: F, margin: 0 });
     card(s, 7.15, 2.15, 5.65, 1.5, COBALT);
@@ -289,27 +289,31 @@ async function build() {
     const s = pres.addSlide();
     s.background = { color: WHITE };
     spine(s);
-    header(s, "데이터 수집 성과", "11주 무중단 · 측정소당 2,500+ 시각 누적");
-    const stats = [["12,835", "총 누적 건수"], ["5", "측정소"], ["100%", "평시 24h 성공률"], ["220", "회귀 테스트"]];
+    header(s, "데이터 수집 성과 & 농도 추세", "108일 무중단 12,835건 · PM2.5 일별 추세");
+    const stats = [["12,835", "총 누적 건수"], ["108일", "연속 무중단 수집"], ["15일", "산단 USL 초과"], ["220", "회귀 테스트"]];
     let sx = 0.7;
     stats.forEach(([b, l]) => {
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: sx, y: 1.6, w: 2.9, h: 1.35, fill: { color: LAV }, rectRadius: 0.08 });
-      s.addText(b, { x: sx, y: 1.74, w: 2.9, h: 0.8, fontSize: 38, bold: true, color: COBALT, align: "center", fontFace: F, margin: 0 });
+      s.addText(b, { x: sx, y: 1.74, w: 2.9, h: 0.8, fontSize: 36, bold: true, color: COBALT, align: "center", fontFace: F, margin: 0 });
       s.addText(l, { x: sx, y: 2.55, w: 2.9, h: 0.35, fontSize: 12.5, color: BODY, align: "center", fontFace: F, margin: 0 });
       sx += 3.04;
     });
-    await addChart(s, "accumulation.png", 0.7, 3.2, 7.5);
+    await addChart(s, "ts_pm25.png", 0.7, 3.2, 7.8);
     // 우측 설명
-    card(s, 8.5, 3.2, 4.3, 3.0);
-    s.addText("무누락 운영의 증거", { x: 8.8, y: 3.45, w: 3.8, h: 0.4, fontSize: 15, bold: true, color: COBALT, fontFace: F, margin: 0 });
+    card(s, 8.7, 3.2, 4.1, 3.0);
+    s.addText("수집을 넘어 ‘신호’까지", { x: 9.0, y: 3.45, w: 3.6, h: 0.4, fontSize: 15, bold: true, color: COBALT, fontFace: F, margin: 0 });
     s.addText([
-      { text: "선형 누적", options: { bold: true, color: INK } },
-      { text: " — 측정소별 그래프가 끊김 없이 직선으로 증가. 매시 자동 수집이 안정적으로 동작.", options: { color: BODY }, breakLine: true },
-    ], { x: 8.8, y: 3.95, w: 3.75, h: 1.0, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
+      { text: "산단 > 거주지", options: { bold: true, color: INK } },
+      { text: " — 산단 영향군 일평균이 대부분 거주지보다 높고, 환경기준(USL 35)을 108일 중 ", options: { color: BODY } },
+      { text: "15일 초과", options: { bold: true, color: RED } },
+      { text: ".", options: { color: BODY }, breakLine: true },
+    ], { x: 9.0, y: 3.95, w: 3.55, h: 1.3, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
     s.addText([
       { text: "self-healing", options: { bold: true, color: INK } },
-      { text: " — cron 드롭 시 다음 실행이 직전 24h 갭을 멱등 복구해 결측을 메움.", options: { color: BODY } },
-    ], { x: 8.8, y: 5.05, w: 3.75, h: 1.0, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
+      { text: " — cron 드롭이 나도 다음 실행이 직전 24h 갭을 멱등 복구해 ", options: { color: BODY } },
+      { text: "최종 데이터는 무결", options: { bold: true, color: TEAL } },
+      { text: ".", options: { color: BODY } },
+    ], { x: 9.0, y: 5.25, w: 3.55, h: 1.0, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
     pageNum(s, 7);
   }
 
@@ -322,7 +326,7 @@ async function build() {
     await addChart(s, "box_grid.png", 1.35, 1.65, 10.6);
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.7, y: 6.5, w: 12.1, h: 0.72, fill: { color: LAV }, rectRadius: 0.08 });
     pill(s, 0.92, 6.64, 1.5, 0.44, "전처리 결과", COBALT, WHITE, 12);
-    s.addText("결측 0건 · 측정값 범위 정상 — 별도 제거/대체 없이 분석 진행 (data_time/created_at 분리 기록)", { x: 2.6, y: 6.5, w: 10, h: 0.72, fontSize: 13, bold: true, color: INK, valign: "middle", fontFace: F, margin: 0 });
+    s.addText("결측 0건 · 측정값 범위 정상 — 측정시각(data_time)·수집시각(created_at) 분리 기록 = audit trail·ALCOA+ 데이터 무결성 원칙", { x: 2.6, y: 6.5, w: 10, h: 0.72, fontSize: 12.5, bold: true, color: INK, valign: "middle", fontFace: F, margin: 0 });
   }
 
   // ───────────────────────── S8 관리 기준 (3σ vs 잔차)
@@ -351,7 +355,7 @@ async function build() {
     s.addText("잔차 관리도 (자기상관 보정)", { x: 7.15, y: 2.0, w: 4.0, h: 0.5, fontSize: 18, bold: true, color: "0B6B61", valign: "middle", fontFace: F, margin: 0 });
     pill(s, 11.4, 2.05, 1.15, 0.42, "채택", TEAL, WHITE, 12);
     s.addText("일주기(시간대) 효과 제거 + AR(1) 잔차에 관리도를 적용해 독립성을 회복.", { x: 7.15, y: 2.7, w: 5.35, h: 0.9, fontSize: 13, color: BODY, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
-    [["백색화 성공", "ACF 0.93 → ≈ 0, 잔차가 독립에 근접"],
+    [["백색화 성공", "ACF 0.93 → ≈0(−0.03), 잔차가 독립에 근접"],
      ["관리한계 정상화", "명목 거짓경보율(0.27%) 수준으로 복원"],
      ["진짜 신호만 탐지", "실측 이탈률 46% → 2%, 특수원인 후보만 남김"]].forEach((it, i) => {
       const y = 3.6 + i * 0.85;
@@ -368,8 +372,8 @@ async function build() {
     s.background = { color: WHITE };
     spine(s);
     header(s, "통계 분석 — 공정능력지수 Cpk", "측정소 × 오염물질 30개 조합 진단");
-    await addChart(s, "cpk_heatmap.png", 0.6, 2.35, 8.0);
-    s.addText("USL=대기환경보전법 환경기준 · Cpk<1.0=불량 위험 · Cpk≥1.33=양호", { x: 0.7, y: 6.05, w: 8, h: 0.35, fontSize: 11, italic: true, color: MUTE, fontFace: F, margin: 0 });
+    await addChart(s, "cpk_heatmap.png", 0.55, 2.35, 7.7);
+    s.addText("USL=대기환경보전법 일평균 환경기준(PM2.5 35㎍/㎥ 등) · LSL=0 · Cpk<1.0=불량 위험 · Cpk≥1.33=양호", { x: 0.7, y: 6.05, w: 8.1, h: 0.35, fontSize: 10.5, italic: true, color: MUTE, fontFace: F, margin: 0 });
     // 우측 인사이트
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 8.85, y: 1.95, w: 3.95, h: 2.25, fill: { color: "FDEDED" }, rectRadius: 0.08 });
     s.addText("우선 관리 — PM2.5 · PM10", { x: 9.1, y: 2.2, w: 3.5, h: 0.4, fontSize: 14.5, bold: true, color: RED, fontFace: F, margin: 0 });
@@ -385,7 +389,7 @@ async function build() {
     const s = pres.addSlide();
     s.background = { color: WHITE };
     spine(s);
-    header(s, "통계 분석 — 자기상관 보정 성과", "잔차 관리도로 거짓경보 96% 감소");
+    header(s, "통계 분석 — 자기상관 보정 성과", "잔차 관리도로 거짓경보율 46% → 2% 정상화");
     await addChart(s, "residual_ba.png", 0.7, 1.7, 8.3);
     // 우측 before/after 콜아웃
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 9.35, y: 1.9, w: 3.45, h: 1.7, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.08, shadow: shadow() });
@@ -412,6 +416,8 @@ async function build() {
     spine(s);
     header(s, "통계 분석 — 단지 비교 검정", "산단 영향군 vs 거주지 (Welch t-test)");
     await addChart(s, "group_box.png", 0.7, 1.75, 7.0);
+    s.addText("※ n = PM2.5 결측 제외 측정치 수. 전체 누적 12,835건 → PM2.5 유효 12,286건 = 산단 9,895(4측정소 합산) + 거주지 2,391(1측정소).",
+      { x: 0.7, y: 6.35, w: 7.2, h: 0.6, fontSize: 9.5, italic: true, color: MUTE, lineSpacingMultiple: 1.15, fontFace: F, margin: 0, valign: "top" });
     // 우측 검정 결과
     s.addImage({ data: IC.check, x: 8.3, y: 1.95, w: 0.45, h: 0.45 });
     s.addText("검증 결과", { x: 8.85, y: 1.95, w: 4, h: 0.45, fontSize: 17, bold: true, color: COBALT, valign: "middle", fontFace: F, margin: 0 });
@@ -454,14 +460,42 @@ async function build() {
     pageNum(s, 13);
   }
 
+  // ───────────────────────── S13.5 현업 전이 (GMP·품질관리)
+  {
+    const s = pres.addSlide();
+    s.background = { color: WHITE };
+    spine(s);
+    header(s, "현업 전이 — GMP · 품질관리로의 확장", "SPC 역량이 실제 제조·품질 업무로 어떻게 이어지는가");
+    govBar(s, "대기질로 검증한 SPC·통계·자동화 역량은 GMP 환경의 공정능력·일탈관리·밸리데이션으로 그대로 전이된다");
+    const rows = [
+      [{ text: "본 프로젝트에서 구현", options: { fill: { color: COBALT }, color: WHITE, bold: true, align: "center", valign: "middle" } },
+       { text: "GMP · 품질관리 현업 적용", options: { fill: { color: COBALT }, color: WHITE, bold: true, align: "center", valign: "middle" } }],
+      ["Cp / Cpk 공정능력 산출", "공정밸리데이션(PPQ) 공정능력 평가 · 규격(spec) 대비 여유 판정"],
+      ["관리도 + Western Electric Rules", "공정 모니터링 · 일탈(deviation)·OOT 조기 탐지 · CAPA 연계"],
+      ["자기상관 보정 잔차 관리도", "자기상관 있는 연속공정 변수의 올바른 관리한계 설정 (거짓경보 억제)"],
+      ["Welch t-test · ANOVA", "배치 간·라인 간 비교 · 동등성은 TOST로 확장(p·Cohen’s d 산출 완료, 임계 ±δ만 추가)"],
+      ["IsolationForest 다변량 탐지", "다변량 공정이상(MSPC) 탐지 · OOS/OOT 조사 트리거 · 원인변수 스크리닝"],
+      ["수집→분석→알림 자동화", "MES / LIMS 품질데이터 모니터링 · ALCOA+ · Part 11 audit trail"],
+    ];
+    s.addTable(rows, {
+      x: 0.7, y: 2.4, w: 11.95, colW: [4.35, 7.6], rowH: [0.48, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56],
+      fontSize: 12, fontFace: F, color: INK, valign: "middle",
+      border: { type: "solid", color: BORDER, pt: 1 },
+      align: "left",
+    });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.7, y: 6.6, w: 11.95, h: 0.62, fill: { color: LAV }, rectRadius: 0.08 });
+    pill(s, 0.92, 6.74, 1.7, 0.34, "생산관리 확장", COBALT, WHITE, 11);
+    s.addText("연속공정 SPC를 배치공정으로 확장 — 골든배치 대비 Mahalanobis 거리 · 배치 간 변동 ANOVA/혼합효과모형 · 수율 모니터링", { x: 2.8, y: 6.6, w: 9.85, h: 0.62, fontSize: 11.5, bold: true, color: INK, valign: "middle", fontFace: F, margin: 0 });
+  }
+
   // ───────────────────────── S13 결론
   {
     const s = pres.addSlide();
     s.background = { color: COBALT };
     s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.14, fill: { color: COBALT_DK } });
-    s.addImage({ data: IC.trophy_w, x: 0.7, y: 0.7, w: 0.55, h: 0.55 });
-    s.addText("핵심 성과 & 입증 역량", { x: 1.4, y: 0.66, w: 11, h: 0.65, fontSize: 28, bold: true, color: WHITE, valign: "middle", fontFace: F, margin: 0 });
-    const kpis = [["12,835건", "11주 무중단 수집"], ["46% → 2%", "PM2.5 거짓경보율"], ["8 + 다변량", "WE Rules · IForest"], ["220 / 220", "회귀 테스트 통과"]];
+    s.addImage({ data: IC.trophy_w, x: 0.7, y: 0.82, w: 0.55, h: 0.55 });
+    s.addText("핵심 성과 & 입증 역량", { x: 1.4, y: 0.78, w: 11, h: 0.65, fontSize: 28, bold: true, color: WHITE, valign: "middle", fontFace: F, margin: 0 });
+    const kpis = [["12,835건", "108일 무중단 수집"], ["46% → 2%", "PM2.5 거짓경보율"], ["8 + 다변량", "WE Rules · IForest"], ["220 / 220", "회귀 테스트 통과"]];
     let x = 0.7;
     kpis.forEach(([b, l]) => {
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.95, w: 2.9, h: 2.1, fill: { color: "2E4DEA" }, rectRadius: 0.1 });
@@ -480,11 +514,15 @@ async function build() {
       s.addText(it[0], { x: cx + 0.45, y: 5.2, w: 3.5, h: 0.7, fontSize: 13.5, bold: true, color: WHITE, lineSpacingMultiple: 1.1, fontFace: F, margin: 0, valign: "top" });
       s.addText(it[1], { x: cx + 0.45, y: 5.85, w: 3.5, h: 0.7, fontSize: 11, color: "BCC8F5", lineSpacingMultiple: 1.15, fontFace: F, margin: 0, valign: "top" });
     });
-    s.addText("github.com/robinho0329/chungbuk-air-quality-monitor   ·   라이브 대시보드 6페이지 운영 중", { x: 0.7, y: 6.85, w: 12, h: 0.4, fontSize: 11.5, color: "9DB2FF", fontFace: F, margin: 0 });
+    s.addText([
+      { text: "→ ", options: { color: "9DB2FF", bold: true } },
+      { text: "이 역량은 GMP 환경의 공정능력(PPQ)·일탈관리·밸리데이션으로 그대로 전이됩니다", options: { color: WHITE, bold: true } },
+    ], { x: 0.7, y: 6.62, w: 11.95, h: 0.4, fontSize: 13, fontFace: F, margin: 0 });
+    s.addText("github.com/robinho0329/chungbuk-air-quality-monitor   ·   라이브 대시보드 6페이지 운영 중", { x: 0.7, y: 7.05, w: 12, h: 0.35, fontSize: 11, color: "7E93D6", fontFace: F, margin: 0 });
   }
 
   await pres.writeFile({ fileName: "포트폴리오_충북대기질_SPC_v2.pptx" });
-  console.log("✅ 생성 완료: 포트폴리오_충북대기질_SPC_v2.pptx (14 슬라이드)");
+  console.log("✅ 생성 완료: 포트폴리오_충북대기질_SPC_v2.pptx (15 슬라이드)");
 }
 
 build().catch((e) => { console.error(e); process.exit(1); });

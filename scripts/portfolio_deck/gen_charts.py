@@ -196,7 +196,7 @@ ax.set_xlabel("관측 순서", fontsize=10)
 ax.set_ylabel("잔차 e", fontsize=10)
 ax.spines[["top", "right"]].set_visible(False)
 ax.grid(color="#EEF1F5", lw=0.6)
-fig.suptitle(f"{target_st} · PM2.5 — 자기상관 보정 전후 (ACF {rr.acf_before:.2f} → {rr.acf_after:.2f})",
+fig.suptitle(f"{target_st} · PM2.5 — 자기상관 보정 전후 (ACF {rr.acf_before:.2f} → ≈0({rr.acf_after:.2f}))",
              fontsize=13, fontweight="bold", color=NAVY, y=1.02)
 fig.tight_layout()
 fig.savefig(IMG / "residual_ba.png", bbox_inches="tight")
@@ -205,14 +205,18 @@ plt.close(fig)
 # ── 5. 6개 오염물질 박스플롯 그리드 ───────────────────────────────
 fig, axes = plt.subplots(2, 3, figsize=(11.5, 5.2), dpi=200)
 box_colors = ["#7FA8F5", "#F2A65A", "#6BBF73", "#E07B7B", "#B79CE0", "#5FC9C2"]
+UNIT = {"pm10": "㎍/㎥", "pm25": "㎍/㎥", "o3": "ppm", "no2": "ppm", "so2": "ppm", "co": "ppm"}
 for ax, p, c in zip(axes.flat, POLLUTANTS, box_colors):
     data = df[p].dropna()
     bp = ax.boxplot(data, vert=False, patch_artist=True, showfliers=False,
                     widths=0.55, medianprops=dict(color=NAVY, lw=1.6))
     bp["boxes"][0].set_facecolor(c)
     bp["boxes"][0].set_alpha(0.6)
-    ax.set_title(DISP[p], fontsize=12, fontweight="bold", color=NAVY)
+    ax.set_title(f"{DISP[p]}  ({UNIT[p]})", fontsize=12, fontweight="bold", color=NAVY)
     ax.set_yticks([])
+    ax.set_xlabel(UNIT[p], fontsize=9, color=GRAY)
+    ax.text(0.97, 0.82, "✓ 이상치 0", transform=ax.transAxes, ha="right",
+            color="#2E7D32", fontsize=8.5, fontweight="bold")
     ax.spines[["top", "right", "left"]].set_visible(False)
     ax.grid(axis="x", color="#EEF1F5", lw=0.6)
     ax.tick_params(labelsize=9)
@@ -221,23 +225,34 @@ fig.tight_layout()
 fig.savefig(IMG / "box_grid.png", bbox_inches="tight")
 plt.close(fig)
 
-# ── 6. 누적 추세 라인 ─────────────────────────────────────────────
-fig, ax = plt.subplots(figsize=(8.4, 4.0), dpi=200)
-line_colors = [COBALT, NAVY, "#5B8DEF", "#E0A458", GRAY]
-for st, c in zip(stations, line_colors):
-    s = df[df["station_name"] == st].sort_values("data_time")
-    ax.plot(s["data_time"], np.arange(1, len(s)+1), label=st, lw=2, color=c)
-ax.set_title("측정소별 누적 데이터 추세 (11주 무중단)", fontsize=13, fontweight="bold", color=NAVY, pad=10)
-ax.set_ylabel("누적 건수", fontsize=11)
-ax.legend(fontsize=9, loc="upper left", frameon=False)
+# ── 6. PM2.5 일별 평균 시계열 (산단 vs 거주지 + USL) ──────────────
+dfg = df.copy()
+dfg["group"] = dfg["station_name"].map(STATION_GROUPS)
+daily = (dfg.dropna(subset=["pm25"])
+         .groupby([pd.Grouper(key="data_time", freq="D"), "group"])["pm25"]
+         .mean().reset_index())
+ind_d = daily[daily["group"] == INDUSTRIAL_GROUP]
+base_d = daily[daily["group"] == BASELINE_GROUP]
+USL_PM25_DAILY = 35.0
+fig, ax = plt.subplots(figsize=(8.6, 4.0), dpi=200)
+ax.plot(ind_d["data_time"], ind_d["pm25"], label=f"{INDUSTRIAL_GROUP} (산단 4곳 평균)", lw=2, color=COBALT)
+ax.plot(base_d["data_time"], base_d["pm25"], label=f"{BASELINE_GROUP} (용암동)", lw=2, color=GRAY)
+ax.axhline(USL_PM25_DAILY, color=RED, ls="--", lw=1.3)
+ax.text(daily["data_time"].max(), USL_PM25_DAILY + 1.0, "USL 35 ㎍/㎥ (일평균 환경기준)",
+        color=RED, fontsize=9.5, ha="right", fontweight="bold")
+ax.set_title("PM2.5 일별 평균 추세 — 산단 영향군 vs 거주지", fontsize=13, fontweight="bold", color=NAVY, pad=10)
+ax.set_ylabel("PM2.5 일평균 (㎍/㎥)", fontsize=11)
+ax.legend(fontsize=9.5, loc="upper right", frameon=False)
 ax.spines[["top", "right"]].set_visible(False)
 ax.grid(color="#EEF1F5", lw=0.7)
 fig.autofmt_xdate()
 fig.tight_layout()
-fig.savefig(IMG / "accumulation.png", bbox_inches="tight")
+fig.savefig(IMG / "ts_pm25.png", bbox_inches="tight")
 plt.close(fig)
+_exceed = (ind_d["pm25"] > USL_PM25_DAILY).sum()
 
-print("✅ 차트 6종 생성 완료:", sorted(p.name for p in IMG.glob("*.png")))
+print("✅ 차트 생성 완료:", sorted(p.name for p in IMG.glob("*.png")))
+print(f"   산단 PM2.5 일평균 USL(35) 초과일: {_exceed}일 / {len(ind_d)}일")
 print(f"   대상 측정소: {stations}")
 print(f"   평균 Cpk(낮은순): " + ", ".join(f"{DISP[p]}={mean_cpk[p]:.2f}" for p in order))
 print(f"   잔차 보정: {target_st} PM2.5 이탈 {len(raw.violations)/raw.n*100:.0f}% → {rr.resid_violation_rate*100:.0f}%")
