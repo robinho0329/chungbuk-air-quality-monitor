@@ -1,0 +1,72 @@
+name: 📑 포트폴리오 PPT 자동 생성
+
+# 지금까지의 산출물(수집·Cp/Cpk·이상탐지·가설검정)을 포트폴리오용 슬라이드 덱으로 묶어
+# 주 1회(월요일 아침) 자동 생성하고 reports/portfolio/에 commit·push 한다.
+# 차트(matplotlib)에 한글이 들어가므로 CI에 나눔고딕 폰트를 설치한다.
+
+on:
+  schedule:
+    # [Fallback] GitHub 내장 schedule은 best-effort. 신뢰성은 외부 스케줄러
+    # (cron-job.org → workflow_dispatch)에 맡기고, 이 schedule은 2차 안전망.
+    # 매주 월요일 KST 09:30 (UTC 00:30 월요일)
+    - cron: '30 0 * * 1'
+  workflow_dispatch:  # [Primary] 외부 cron(cron-job.org) 주 1회 호출 + UI 수동 실행
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portfolio-ppt
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 레포 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 🔤 한글 폰트 설치 (matplotlib 차트용)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-nanum
+          sudo fc-cache -f
+
+      - name: 🚀 uv 설치
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: 🐍 Python 3.14 설치 (uv)
+        run: uv python install 3.14
+
+      - name: 📦 의존성 설치
+        run: uv sync --frozen
+
+      - name: 📑 포트폴리오 PPT 생성
+        env:
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: "utf-8"
+          # 나눔고딕 경로 (apt fonts-nanum 설치 위치)
+          PORTFOLIO_FONT: /usr/share/fonts/truetype/nanum/NanumGothic.ttf
+          # collectors 모듈 import 대비
+          AIRKOREA_API_KEY: ${{ secrets.AIRKOREA_API_KEY }}
+        run: uv run python scripts/generate_portfolio_ppt.py
+
+      - name: 📤 PPT 자동 commit & push
+        run: |
+          git config user.email "portfolio-bot@github-actions"
+          git config user.name "Portfolio PPT Bot"
+          git add reports/portfolio/
+          if git diff --staged --quiet; then
+            echo "PPT 변경 없음 — 커밋 스킵"
+          else
+            TS=$(date -u +'%Y-%m-%d')
+            git commit -m "auto(portfolio): SPC 포트폴리오 PPT ${TS}"
+            git pull --rebase --autostash origin main 2>/dev/null || true
+            git push origin main
+          fi
