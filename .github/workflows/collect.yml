@@ -10,7 +10,9 @@ on:
     # (cron-job.org → workflow_dispatch API)에 맡기고, 이 schedule은 외부가 죽었을 때의
     # 2차 안전망으로만 둔다. docs/EXTERNAL_SCHEDULER_SETUP.md 참조.
     # 어쩌다 한 번이라도 실행되면 self-heal이 직전 24h 갭을 자동 복구한다.
-    - cron: '7,27,47 * * * *'
+    # 빈도를 시간당 1회로 축소(외부 cron과의 동시 push 충돌 가능성↓). 분(25)은
+    # 외부 cron(:15/:35/:55)과 겹치지 않게 배치하되, 지연 충돌은 아래 push 재시도가 흡수.
+    - cron: '25 * * * *'
   workflow_dispatch:  # [Primary] 외부 cron(cron-job.org) 매시 호출 + UI 수동 실행
 
 permissions:
@@ -28,12 +30,12 @@ jobs:
 
     steps:
       - name: 📥 레포 체크아웃
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
       - name: 🚀 uv 설치
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
@@ -62,21 +64,40 @@ jobs:
               print(f'  {k}: {v}건')
           " || true
 
-      - name: 📤 DB 변경 시 커밋 & 푸시
+      - name: 📤 DB 변경 시 커밋 & 푸시 (충돌 시 멱등 재수집 재시도)
+        env:
+          AIRKOREA_API_KEY: ${{ secrets.AIRKOREA_API_KEY }}
+          AIRKOREA_API_KEY_ENCODED: ${{ secrets.AIRKOREA_API_KEY }}
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: "utf-8"
         run: |
           git config user.email "airkorea-bot@github-actions"
           git config user.name "Airkorea Collect Bot"
-          git add src/storage/data.db
-          if git diff --staged --quiet; then
-            echo "DB 변경 없음 — 커밋 스킵 (중복 데이터로 INSERT OR IGNORE된 케이스)"
-          else
+
+          # 바이너리 data.db는 rebase 자동 병합이 불가능하다. 동시 push로 거부되면
+          # 원격 최신으로 리셋 후 collect_once를 재실행(INSERT OR IGNORE = 멱등)해
+          # 이번 시각 데이터를 최신 DB에 다시 삽입하고 재커밋·재푸시한다.
+          for attempt in 1 2 3 4 5; do
+            git add src/storage/data.db
+            if git diff --staged --quiet; then
+              echo "DB 변경 없음 — 커밋 스킵 (이미 반영됨/중복 INSERT OR IGNORE)"
+              exit 0
+            fi
             TS=$(date -u +'%Y-%m-%dT%H:%MZ')
             COUNT=$(uv run python -c "from src.storage.database import query_all; print(len(query_all()))" 2>/dev/null || echo "?")
             git commit -m "auto(collect): airkorea snapshot ${TS} (누적 ${COUNT}건)"
-            # 동시 push 충돌 방지
-            git pull --rebase --autostash origin main 2>/dev/null || true
-            git push origin main
-          fi
+            if git push origin main; then
+              echo "✅ push 성공 (시도 ${attempt}/5)"
+              exit 0
+            fi
+            echo "⚠️ push 거부(non-fast-forward) — 원격 반영 후 멱등 재수집 (${attempt}/5)"
+            git fetch origin main
+            git reset --hard origin/main          # 내 커밋·로컬 DB 폐기, 원격 최신 채택
+            uv run python scripts/collect_once.py || true   # 최신 DB에 이번 시각 재삽입
+            sleep $(( (RANDOM % 6) + 2 ))
+          done
+          echo "❌ 5회 재시도 후에도 push 실패"
+          exit 1
 
       - name: 🔔 SPC 이상 탐지 알림 (Cpk 미달 / WE Rules 위반)
         if: ${{ env.DISCORD_WEBHOOK_URL != '' }}

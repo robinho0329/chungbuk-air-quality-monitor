@@ -32,12 +32,12 @@ jobs:
 
     steps:
       - name: 📥 레포 체크아웃
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
       - name: 🚀 uv 설치
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
@@ -61,16 +61,27 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: uv run python scripts/generate_hypothesis_report.py
 
-      - name: 📤 리포트 자동 commit & push
+      - name: 📤 리포트 자동 commit & push (충돌 시 rebase 재시도)
         run: |
           git config user.email "daily-loop@github-actions"
           git config user.name "Daily Dev Loop Bot"
           git add reports/daily/ reports/hypothesis/
           if git diff --staged --quiet; then
             echo "리포트 변경 없음 — 커밋 스킵"
-          else
-            TS=$(date -u +'%Y-%m-%d')
-            git commit -m "auto(daily): dev loop report ${TS}"
-            git pull --rebase --autostash origin main 2>/dev/null || true
-            git push origin main
+            exit 0
           fi
+          TS=$(date -u +'%Y-%m-%d')
+          git commit -m "auto(daily): dev loop report ${TS}"
+          # 리포트는 data.db와 파일이 겹치지 않아 rebase로 깔끔히 재적용된다.
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main || git rebase --abort
+            if git push origin main; then
+              echo "✅ push 성공 (시도 ${attempt}/5)"
+              exit 0
+            fi
+            echo "⚠️ push 거부 — 재시도 (${attempt}/5)"
+            sleep $(( (RANDOM % 6) + 2 ))
+          done
+          echo "❌ 5회 재시도 후에도 push 실패"
+          exit 1
