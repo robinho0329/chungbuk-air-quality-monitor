@@ -1,0 +1,50 @@
+name: 🛰️ 외부 cron 가동 감시 (watchdog)
+
+# 외부 스케줄러(cron-job.org)가 유일한 수집 트리거가 됐으므로, 그게 멈추면
+# 알아챌 방법이 없다. 이 watchdog이 주기적으로 '마지막 수집이 얼마나 오래됐나'를
+# 점검해 임계(기본 3h) 초과 시 Discord로 경보한다.
+#
+# 이 워크플로는 절대 실패하지 않도록 설계됐다(스크립트가 모든 예외를 흡수, exit 0).
+# 따라서 schedule 트리거를 써도 실패 알림 메일을 만들지 않는다. 커밋·push도 없어
+# 동시 push 충돌도 없다(읽기 전용 + Discord 전송).
+
+on:
+  schedule:
+    - cron: '10 */3 * * *'   # 3시간마다(:10). best-effort 드롭돼도 watchdog엔 충분.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cron-watchdog
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: 📥 레포 체크아웃
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: 🚀 uv 설치
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: 🐍 Python 3.14 설치 (uv)
+        run: uv python install 3.14
+
+      - name: 📦 의존성 설치
+        run: uv sync --frozen
+
+      - name: 🛰️ 수집 지연 점검 + Discord 경보
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          WATCHDOG_STALE_HOURS: "3"
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: "utf-8"
+        run: uv run python scripts/cron_watchdog.py
