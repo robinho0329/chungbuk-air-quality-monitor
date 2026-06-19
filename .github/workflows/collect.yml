@@ -4,15 +4,11 @@ name: 🌬️ 충북 대기질 자동 수집
 # 결과 SQLite DB는 레포에 자동 커밋되어 영속 저장.
 
 on:
-  schedule:
-    # [Fallback] GitHub 내장 schedule cron은 best-effort라 무료 레포에서 트리거를 대량
-    # 드롭한다(실측 24h 중 6회만 실행, 분도 안 지켜짐). 실시간성은 외부 스케줄러
-    # (cron-job.org → workflow_dispatch API)에 맡기고, 이 schedule은 외부가 죽었을 때의
-    # 2차 안전망으로만 둔다. docs/EXTERNAL_SCHEDULER_SETUP.md 참조.
-    # 어쩌다 한 번이라도 실행되면 self-heal이 직전 24h 갭을 자동 복구한다.
-    # 빈도를 시간당 1회로 축소(외부 cron과의 동시 push 충돌 가능성↓). 분(25)은
-    # 외부 cron(:15/:35/:55)과 겹치지 않게 배치하되, 지연 충돌은 아래 push 재시도가 흡수.
-    - cron: '25 * * * *'
+  # 트리거는 외부 스케줄러(cron-job.org → workflow_dispatch) 단일화.
+  # GitHub 내장 schedule은 best-effort라 드롭이 잦고 정시 외부 cron과 동시 push 충돌로
+  # 실패 알림 메일을 양산해 제거했다. 외부 cron이 최대 3일 죽어도 self-heal(72h 윈도)이
+  # 다음 성공 실행에서 갭을 자동 복구하므로 데이터 완결성은 유지된다.
+  # docs/EXTERNAL_SCHEDULER_SETUP.md 참조.
   workflow_dispatch:  # [Primary] 외부 cron(cron-job.org) 매시 호출 + UI 수동 실행
 
 permissions:
