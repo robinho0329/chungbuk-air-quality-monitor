@@ -26,9 +26,10 @@ KST = timezone(timedelta(hours=9))
 # 갭이 이 시간보다 오래면 MONTH로 escalate(그 외 DAILY). DAILY 실제 커버(~24h)에
 # 분 단위 여유를 둬 24h 윈도우가 경계에서 불필요하게 MONTH로 튀지 않게 함.
 _DAILY_COVERAGE_HOURS = 30
-# 수집기 기본 점검 윈도우(시간). 실측 cron 드롭은 수 시간 수준이라 24h면 충분하며,
-# 이 범위는 DAILY 기간조회(저비용)로 모두 커버되어 매 실행 MONTH 호출 낭비를 막는다.
-DEFAULT_WINDOW_HOURS = 24
+# 수집기 기본 점검 윈도우(시간). 내장 schedule 제거 후 외부 cron(cron-job.org)이
+# 유일한 트리거이므로, 외부가 최대 3일까지 죽어도 복구 가능하도록 72h로 확장한다.
+# 24h를 넘는 갭은 _DAILY_COVERAGE_HOURS 초과로 MONTH 기간조회로 자동 escalate된다.
+DEFAULT_WINDOW_HOURS = 72
 
 
 def _now_kst_naive() -> datetime:
