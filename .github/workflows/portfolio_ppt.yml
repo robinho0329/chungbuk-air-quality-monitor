@@ -37,7 +37,7 @@ jobs:
           sudo fc-cache -f
 
       - name: 🚀 uv 설치
-        uses: astral-sh/setup-uv@v8
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
 
