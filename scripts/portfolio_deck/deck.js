@@ -6,7 +6,12 @@ const React = require("react");
 const ReactDOMServer = require("react-dom/server");
 const fa = require("react-icons/fa6");
 
+const fs = require("fs");
 const IMG = path.join(__dirname, "img");
+// 핵심 수치는 gen_charts.py가 만든 stats.json에서 읽어 차트와 항상 일치시킨다(드리프트 방지).
+const S = JSON.parse(fs.readFileSync(path.join(__dirname, "stats.json"), "utf-8"));
+const TOTAL = Number(S.total).toLocaleString("en-US");  // "13,685"
+const BA = `${S.resid_before_pct}% → ${S.resid_after_pct}%`;
 
 // ── 팔레트 ──────────────────────────────────────────────
 const COBALT = "1F40E6";
@@ -112,12 +117,28 @@ async function build() {
     s.addShape(pres.shapes.LINE, { x: 4.12, y: 5.15, w: 8.4, h: 0, line: { color: BORDER, width: 1.5 } });
     s.addText([
       { text: "분석 기간  ", options: { color: MUTE } },
-      { text: "2026.02.28 ~ 2026.06.16", options: { color: INK, bold: true } },
+      { text: `${S.period_start} ~ ${S.period_end}`, options: { color: INK, bold: true } },
       { text: "      누적  ", options: { color: MUTE } },
-      { text: "12,835건 · 측정소 5곳 · 1시간 해상도", options: { color: INK, bold: true } },
+      { text: `${TOTAL}건 · 측정소 5곳 · 1시간 해상도`, options: { color: INK, bold: true } },
     ], { x: 4.12, y: 5.35, w: 8.6, h: 0.4, fontSize: 12.5, fontFace: F, margin: 0 });
     pill(s, 4.12, 6.05, 1.4, 0.46, "유호빈", COBALT, WHITE, 14);
     s.addText("개인 프로젝트  ·  github.com/robinho0329/chungbuk-air-quality-monitor", { x: 5.7, y: 6.05, w: 7, h: 0.46, fontSize: 11.5, color: MUTE, valign: "middle", fontFace: F, margin: 0 });
+  }
+
+  // ───────────────────────── S1.5 훅 (반전 메시지 · 단일 핵심 메시지)
+  {
+    const s = pres.addSlide();
+    s.background = { color: INK };
+    s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 0.16, h: H, fill: { color: COBALT } });
+    s.addText("HOOK", { x: 0.9, y: 1.5, w: 4, h: 0.4, fontSize: 13, bold: true, color: "9DB2FF", charSpacing: 3, fontFace: F, margin: 0 });
+    s.addText("측정소 5곳, PM2.5 공정능력이\n전부 ‘규격 미달’이었다.", { x: 0.9, y: 2.05, w: 11.6, h: 1.7, fontSize: 34, bold: true, color: WHITE, lineSpacingMultiple: 1.08, fontFace: F, margin: 0 });
+    s.addText([
+      { text: "Cpk < 1.0", options: { color: "FF8A8A", bold: true } },
+      { text: "  —  그런데 진짜 문제는 ", options: { color: "C9D4FF" } },
+      { text: "‘위치’가 아니었다.", options: { color: WHITE, bold: true } },
+    ], { x: 0.9, y: 3.95, w: 11.6, h: 0.7, fontSize: 23, fontFace: F, margin: 0 });
+    s.addShape(pres.shapes.LINE, { x: 0.92, y: 4.95, w: 7.5, h: 0, line: { color: "3A476A", width: 1.5 } });
+    s.addText("변동의 95%는 측정소(위치)가 아니라 시간·기상에서 왔다.\n관리할 산포와 그냥 둘 변동을 통계로 가르는 것 — 그것이 이 프로젝트의 핵심이자, 내가 증명한 QC 역량이다.", { x: 0.92, y: 5.15, w: 11.4, h: 1.3, fontSize: 15, color: "AEB9DA", lineSpacingMultiple: 1.45, fontFace: F, margin: 0, valign: "top" });
   }
 
   // ───────────────────────── S2 목차
@@ -204,7 +225,7 @@ async function build() {
     s.addText("핵심 결과", { x: 7.77, y: 5.05, w: 4.5, h: 0.5, fontSize: 15, bold: true, color: TEAL, valign: "middle", fontFace: F, margin: 0 });
     s.addText([
       { text: "PM2.5·PM10 전 측정소 ‘불량 위험’ 식별", options: { color: INK, bold: true, breakLine: true } },
-      { text: "잔차 관리도로 거짓경보 46% → 2% 개선", options: { color: INK, bold: true } },
+      { text: `잔차 관리도로 거짓경보 ${BA} 개선`, options: { color: INK, bold: true } },
     ], { x: 7.15, y: 5.6, w: 5.4, h: 0.85, fontSize: 13.5, lineSpacingMultiple: 1.25, fontFace: F, margin: 0, valign: "top" });
     pageNum(s, 4);
   }
@@ -289,8 +310,8 @@ async function build() {
     const s = pres.addSlide();
     s.background = { color: WHITE };
     spine(s);
-    header(s, "데이터 수집 성과 & 농도 추세", "108일 무중단 12,835건 · PM2.5 일별 추세");
-    const stats = [["12,835", "총 누적 건수"], ["108일", "연속 무중단 수집"], ["15일", "산단 USL 초과"], ["220", "회귀 테스트"]];
+    header(s, "데이터 수집 성과 & 농도 추세", `${S.days}일 무중단 ${TOTAL}건 · PM2.5 일별 추세`);
+    const stats = [[TOTAL, "총 누적 건수"], [`${S.days}일`, "연속 무중단 수집"], [`${S.exceed_days}일`, "산단 USL 초과"], ["220", "회귀 테스트"]];
     let sx = 0.7;
     stats.forEach(([b, l]) => {
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: sx, y: 1.6, w: 2.9, h: 1.35, fill: { color: LAV }, rectRadius: 0.08 });
@@ -304,8 +325,8 @@ async function build() {
     s.addText("수집을 넘어 ‘신호’까지", { x: 9.0, y: 3.45, w: 3.6, h: 0.4, fontSize: 15, bold: true, color: COBALT, fontFace: F, margin: 0 });
     s.addText([
       { text: "산단 > 거주지", options: { bold: true, color: INK } },
-      { text: " — 산단 영향군 일평균이 대부분 거주지보다 높고, 환경기준(USL 35)을 108일 중 ", options: { color: BODY } },
-      { text: "15일 초과", options: { bold: true, color: RED } },
+      { text: ` — 산단 영향군 일평균이 대부분 거주지보다 높고, 환경기준(USL 35)을 ${S.ind_days}일 중 `, options: { color: BODY } },
+      { text: `${S.exceed_days}일 초과`, options: { bold: true, color: RED } },
       { text: ".", options: { color: BODY }, breakLine: true },
     ], { x: 9.0, y: 3.95, w: 3.55, h: 1.3, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
     s.addText([
@@ -344,7 +365,7 @@ async function build() {
     ], { x: 1.0, y: 2.7, w: 5.35, h: 0.9, fontSize: 13, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
     [["독립 가정 붕괴", "인접 관측치가 강하게 상관 → MR 기반 σ 과소추정"],
      ["관리한계 협소", "한계선이 좁아져 정상 변동도 이탈로 오판"],
-     ["거짓경보 폭증", "실측 이탈률 46% — 특수원인 식별 불가"]].forEach((it, i) => {
+     ["거짓경보 폭증", `실측 이탈률 ${S.resid_before_pct}% — 특수원인 식별 불가`]].forEach((it, i) => {
       const y = 3.6 + i * 0.85;
       s.addShape(pres.shapes.OVAL, { x: 1.0, y: y + 0.05, w: 0.16, h: 0.16, fill: { color: RED } });
       s.addText(it[0], { x: 1.3, y, w: 5.0, h: 0.3, fontSize: 13, bold: true, color: INK, fontFace: F, margin: 0 });
@@ -357,7 +378,7 @@ async function build() {
     s.addText("일주기(시간대) 효과 제거 + AR(1) 잔차에 관리도를 적용해 독립성을 회복.", { x: 7.15, y: 2.7, w: 5.35, h: 0.9, fontSize: 13, color: BODY, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
     [["백색화 성공", "ACF 0.93 → ≈0(−0.03), 잔차가 독립에 근접"],
      ["관리한계 정상화", "명목 거짓경보율(0.27%) 수준으로 복원"],
-     ["진짜 신호만 탐지", "실측 이탈률 46% → 2%, 특수원인 후보만 남김"]].forEach((it, i) => {
+     ["진짜 신호만 탐지", `실측 이탈률 ${BA}, 특수원인 후보만 남김`]].forEach((it, i) => {
       const y = 3.6 + i * 0.85;
       s.addImage({ data: IC.check, x: 7.15, y: y, w: 0.22, h: 0.22 });
       s.addText(it[0], { x: 7.5, y, w: 5.0, h: 0.3, fontSize: 13, bold: true, color: INK, fontFace: F, margin: 0 });
@@ -377,7 +398,7 @@ async function build() {
     // 우측 인사이트
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 8.85, y: 1.95, w: 3.95, h: 2.25, fill: { color: "FDEDED" }, rectRadius: 0.08 });
     s.addText("우선 관리 — PM2.5 · PM10", { x: 9.1, y: 2.2, w: 3.5, h: 0.4, fontSize: 14.5, bold: true, color: RED, fontFace: F, margin: 0 });
-    s.addText("전 측정소 Cpk < 1.0 ‘불량 위험’. 특히 오송읍 PM2.5 Cpk 0.28로 최저 → 1순위 관리 대상. 미세먼지가 구조적 핵심 인자.", { x: 9.1, y: 2.68, w: 3.5, h: 1.45, fontSize: 12.5, color: BODY, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
+    s.addText(`전 측정소 Cpk < 1.0 ‘불량 위험’. 특히 ${S.cpk_pm25_min_station} PM2.5 Cpk ${S.cpk_pm25_min}로 최저 → 1순위 관리 대상. 미세먼지가 구조적 핵심 인자.`, { x: 9.1, y: 2.68, w: 3.5, h: 1.45, fontSize: 12.5, color: BODY, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
     card(s, 8.85, 4.45, 3.95, 2.25);
     s.addText("관리 양호 — SO₂ · CO", { x: 9.1, y: 4.72, w: 3.5, h: 0.4, fontSize: 14.5, bold: true, color: TEAL, fontFace: F, margin: 0 });
     s.addText("Cpk ≥ 1.2로 규격 대비 여유. Cp/Cpk·USL은 대기환경보전법 환경기준(일·연평균) 기반으로 산출.", { x: 9.1, y: 5.2, w: 3.5, h: 1.4, fontSize: 12.5, color: BODY, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
@@ -389,17 +410,17 @@ async function build() {
     const s = pres.addSlide();
     s.background = { color: WHITE };
     spine(s);
-    header(s, "통계 분석 — 자기상관 보정 성과", "잔차 관리도로 거짓경보율 46% → 2% 정상화");
+    header(s, "통계 분석 — 자기상관 보정 성과", `잔차 관리도로 거짓경보율 ${BA} 정상화`);
     await addChart(s, "residual_ba.png", 0.7, 1.7, 8.3);
     // 우측 before/after 콜아웃
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 9.35, y: 1.9, w: 3.45, h: 1.7, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.08, shadow: shadow() });
     s.addText("BEFORE", { x: 9.35, y: 2.08, w: 3.45, h: 0.32, fontSize: 12, bold: true, color: MUTE, align: "center", charSpacing: 1, fontFace: F, margin: 0 });
-    s.addText("46%", { x: 9.35, y: 2.35, w: 3.45, h: 0.85, fontSize: 50, bold: true, color: RED, align: "center", fontFace: F, margin: 0 });
+    s.addText(`${S.resid_before_pct}%`, { x: 9.35, y: 2.35, w: 3.45, h: 0.85, fontSize: 50, bold: true, color: RED, align: "center", fontFace: F, margin: 0 });
     s.addText("전통 I-Chart 거짓경보율", { x: 9.35, y: 3.2, w: 3.45, h: 0.32, fontSize: 11.5, color: BODY, align: "center", fontFace: F, margin: 0 });
     s.addText("▼", { x: 9.35, y: 3.66, w: 3.45, h: 0.32, fontSize: 16, bold: true, color: TEAL, align: "center", fontFace: F, margin: 0 });
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 9.35, y: 4.05, w: 3.45, h: 1.7, fill: { color: "F0F8F6" }, rectRadius: 0.08 });
     s.addText("AFTER", { x: 9.35, y: 4.23, w: 3.45, h: 0.32, fontSize: 12, bold: true, color: "0B6B61", align: "center", charSpacing: 1, fontFace: F, margin: 0 });
-    s.addText("2%", { x: 9.35, y: 4.5, w: 3.45, h: 0.85, fontSize: 50, bold: true, color: TEAL, align: "center", fontFace: F, margin: 0 });
+    s.addText(`${S.resid_after_pct}%`, { x: 9.35, y: 4.5, w: 3.45, h: 0.85, fontSize: 50, bold: true, color: TEAL, align: "center", fontFace: F, margin: 0 });
     s.addText("잔차 관리도 거짓경보율", { x: 9.35, y: 5.35, w: 3.45, h: 0.32, fontSize: 11.5, color: "0B6B61", align: "center", fontFace: F, margin: 0 });
     // 하단 인사이트
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.7, y: 6.4, w: 12.1, h: 0.82, fill: { color: COBALT }, rectRadius: 0.08 });
@@ -416,7 +437,7 @@ async function build() {
     spine(s);
     header(s, "통계 분석 — 단지 비교 검정", "산단 영향군 vs 거주지 (Welch t-test)");
     await addChart(s, "group_box.png", 0.7, 1.75, 7.0);
-    s.addText("※ n = PM2.5 결측 제외 측정치 수. 전체 누적 12,835건 → PM2.5 유효 12,286건 = 산단 9,895(4측정소 합산) + 거주지 2,391(1측정소).",
+    s.addText(`※ 전체 누적 ${TOTAL}건. PM2.5 결측 제외 측정치로 산단 4측정소(합산) vs 거주지 1측정소를 Welch t-test 비교.`,
       { x: 0.7, y: 6.35, w: 7.2, h: 0.6, fontSize: 9.5, italic: true, color: MUTE, lineSpacingMultiple: 1.15, fontFace: F, margin: 0, valign: "top" });
     // 우측 검정 결과
     s.addImage({ data: IC.check, x: 8.3, y: 1.95, w: 0.45, h: 0.45 });
@@ -495,7 +516,7 @@ async function build() {
     s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.14, fill: { color: COBALT_DK } });
     s.addImage({ data: IC.trophy_w, x: 0.7, y: 0.82, w: 0.55, h: 0.55 });
     s.addText("핵심 성과 & 입증 역량", { x: 1.4, y: 0.78, w: 11, h: 0.65, fontSize: 28, bold: true, color: WHITE, valign: "middle", fontFace: F, margin: 0 });
-    const kpis = [["12,835건", "108일 무중단 수집"], ["46% → 2%", "PM2.5 거짓경보율"], ["8 + 다변량", "WE Rules · IForest"], ["220 / 220", "회귀 테스트 통과"]];
+    const kpis = [[`${TOTAL}건`, `${S.days}일 무중단 수집`], [BA, "PM2.5 거짓경보율"], ["8 + 다변량", "WE Rules · IForest"], ["220 / 220", "회귀 테스트 통과"]];
     let x = 0.7;
     kpis.forEach(([b, l]) => {
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.95, w: 2.9, h: 2.1, fill: { color: "2E4DEA" }, rectRadius: 0.1 });
@@ -521,8 +542,31 @@ async function build() {
     s.addText("github.com/robinho0329/chungbuk-air-quality-monitor   ·   라이브 대시보드 6페이지 운영 중", { x: 0.7, y: 7.05, w: 12, h: 0.35, fontSize: 11, color: "7E93D6", fontFace: F, margin: 0 });
   }
 
+  // ───────────────────────── APPENDIX 예상 질문 & 대응
+  {
+    const s = pres.addSlide();
+    s.background = { color: WHITE };
+    spine(s);
+    header(s, "예상 질문 & 대응", "Appendix — 면접 Q&A 핵심");
+    const rows = [
+      [{ text: "예상 질문", options: { fill: { color: COBALT }, color: WHITE, bold: true, align: "center", valign: "middle" } },
+       { text: "대응 요지", options: { fill: { color: COBALT }, color: WHITE, bold: true, align: "center", valign: "middle" } }],
+      ["왜 제조 데이터가 아니라 대기질인가?", "공정과 통계 구조가 같은 ‘실시간 실데이터’라 일부러 선택. 더미는 SPC가 잡아야 할 결측·이상·드리프트가 사라져 무의미."],
+      ["대기질은 통제 불가인데 Improve는?", "공정 조작 불가가 한계. Improve를 ‘방법론 개선(잔차 보정 거짓경보 44%→2%)’ + alert/action 정책으로 매핑."],
+      ["효과크기가 작은데(d≈0.2~0.3) 의미 있나?", "표본 1만이라 유의는 당연. 그래서 효과크기·η²로 ‘실질 차이는 작다’를 정직히 보고 — 통계적 유의 ≠ 실질적 중요."],
+      ["자기상관이 왜 그렇게 중요한가?", "lag-1 ACF 0.93 → 유효표본 n_eff≈75로 명목 n의 1/27. p값이 과대평가됨. 잔차 관리도로 보정해 신호를 분리."],
+      ["위치 차이가 작으면 결론은 뭔가?", "산포의 출처를 시간·기상(공통원인)으로 분리 → ‘라인별 관리’가 아니라 ‘공통원인 관리’가 답이라는 진단."],
+    ];
+    s.addTable(rows, {
+      x: 0.7, y: 1.7, w: 11.95, colW: [4.2, 7.75],
+      rowH: [0.45, 0.92, 0.92, 0.92, 0.92, 0.92],
+      fontSize: 12, fontFace: F, color: INK, valign: "middle",
+      border: { type: "solid", color: BORDER, pt: 1 }, align: "left",
+    });
+  }
+
   await pres.writeFile({ fileName: "포트폴리오_충북대기질_SPC_v2.pptx" });
-  console.log("✅ 생성 완료: 포트폴리오_충북대기질_SPC_v2.pptx (15 슬라이드)");
+  console.log("✅ 생성 완료: 포트폴리오_충북대기질_SPC_v2.pptx (17 슬라이드)");
 }
 
 build().catch((e) => { console.error(e); process.exit(1); });

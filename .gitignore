@@ -36,3 +36,10 @@ logs/
 
 # uv: lock은 재현성 위해 추적 (application 권장 사항)
 # uv.lock  ← intentionally NOT ignored
+
+# 포트폴리오 덱 빌드 산출물 (gen_charts→deck.js 재생성 가능)
+scripts/portfolio_deck/img/
+scripts/portfolio_deck/node_modules/
+scripts/portfolio_deck/stats.json
+scripts/portfolio_deck/package-lock.json
+scripts/portfolio_deck/*.pptx

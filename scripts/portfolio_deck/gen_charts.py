@@ -8,7 +8,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-ROOT = Path("/Users/t2025-m0190/workspace/chungbuk-air-quality-monitor")
+# 프로젝트 루트 (이 파일: <root>/scripts/portfolio_deck/gen_charts.py)
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 import matplotlib  # noqa: E402
@@ -18,13 +19,26 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-# Pretendard 등록
-FONT_DIR = Path("/Users/t2025-m0190/Library/Fonts")
+# 한글 폰트: Pretendard 우선, 없으면 시스템 한글 폰트로 폴백 (OS 무관 portable).
+# 환경변수 PORTFOLIO_FONT_DIR로 Pretendard otf 디렉토리 지정 가능.
+import os  # noqa: E402
+
+_font_family = None
+_pretendard_dir = Path(os.environ.get("PORTFOLIO_FONT_DIR", str(Path.home() / "Library" / "Fonts")))
 for f in ["Regular", "Medium", "SemiBold", "Bold", "ExtraBold", "Black"]:
-    p = FONT_DIR / f"Pretendard-{f}.otf"
+    p = _pretendard_dir / f"Pretendard-{f}.otf"
     if p.exists():
         fm.fontManager.addfont(str(p))
-plt.rcParams["font.family"] = "Pretendard"
+        _font_family = "Pretendard"
+if _font_family is None:
+    # 시스템 한글 폰트 폴백 (Windows: 맑은 고딕, Linux: Nanum 등)
+    for cand in ["C:/Windows/Fonts/malgun.ttf",
+                 "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"]:
+        if Path(cand).exists():
+            fm.fontManager.addfont(cand)
+            _font_family = fm.FontProperties(fname=cand).get_name()
+            break
+plt.rcParams["font.family"] = _font_family or "sans-serif"
 plt.rcParams["axes.unicode_minus"] = False
 
 from src.analysis.capability import InsufficientSampleError, compute_capability  # noqa: E402
@@ -38,7 +52,8 @@ POLLUTANTS = list(SPEC_LIMITS.keys())
 KR = {p: SPEC_LIMITS[p].description.split("(")[0].strip() for p in POLLUTANTS}
 DISP = {"pm10": "PM10", "pm25": "PM2.5", "o3": "O₃", "no2": "NO₂", "so2": "SO₂", "co": "CO"}
 
-IMG = Path("/Users/t2025-m0190/workspace/chungbuk-air-quality-monitor/build/deck/img")
+# deck.js가 __dirname/img를 읽으므로 이 스크립트 옆 img/에 출력 (in-place 빌드).
+IMG = Path(__file__).resolve().parent / "img"
 IMG.mkdir(parents=True, exist_ok=True)
 
 # 팔레트
@@ -256,3 +271,36 @@ print(f"   산단 PM2.5 일평균 USL(35) 초과일: {_exceed}일 / {len(ind_d)}
 print(f"   대상 측정소: {stations}")
 print(f"   평균 Cpk(낮은순): " + ", ".join(f"{DISP[p]}={mean_cpk[p]:.2f}" for p in order))
 print(f"   잔차 보정: {target_st} PM2.5 이탈 {len(raw.violations)/raw.n*100:.0f}% → {rr.resid_violation_rate*100:.0f}%")
+
+# ── 덱 텍스트 동적화: 핵심 수치를 stats.json으로 내보내 deck.js가 읽게 한다 ──
+# (차트는 동적인데 덱 텍스트가 정적이면 숫자가 어긋남 → 드리프트 영구 해결)
+import json  # noqa: E402
+
+_all = query_all()
+_total = len(_all)
+_times = sorted({r.data_time for r in _all})
+_days = len({t.date() for t in _times})
+# 측정소×PM2.5 최저 Cpk
+_lowest_v, _lowest_st = 99.0, ""
+for st in stations:
+    vals = [getattr(r, "pm25") for r in _all if r.station_name == st and r.pm25 is not None]
+    try:
+        c = compute_capability(vals, usl=35.0, lsl=0.0).cpk
+        if c < _lowest_v:
+            _lowest_v, _lowest_st = c, st
+    except (InsufficientSampleError, ValueError):
+        pass
+stats = {
+    "total": _total,
+    "period_start": _times[0].strftime("%Y.%m.%d"),
+    "period_end": _times[-1].strftime("%Y.%m.%d"),
+    "days": _days,
+    "exceed_days": int(_exceed),
+    "ind_days": int(len(ind_d)),
+    "resid_before_pct": round(len(raw.violations) / raw.n * 100),
+    "resid_after_pct": round(rr.resid_violation_rate * 100),
+    "cpk_pm25_min": round(_lowest_v, 2),
+    "cpk_pm25_min_station": _lowest_st,
+}
+(IMG.parent / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
+print(f"   stats.json 저장: 총 {_total}건 · {_days}일 · 최저 PM2.5 Cpk {_lowest_v:.2f}({_lowest_st})")
