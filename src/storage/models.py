@@ -58,3 +58,34 @@ class AirQualityMeasurement(SQLModel, table=True):
         default_factory=datetime.now,
         description="DB 저장 시각",
     )
+
+
+class WeatherObservation(SQLModel, table=True):
+    """기상청 ASOS 시간자료 1행 (청주 종관기상관측소).
+
+    대기질 측정소들(반경 ~15km)이 공유하는 단일 기상관측. obs_time으로 대기질
+    data_time과 시간 단위 조인해 풍향 회귀·기상 보정 SPC에 사용한다.
+    중복 키는 (station_id, obs_time).
+    """
+
+    __tablename__ = "weather_observation"
+    __table_args__ = (
+        UniqueConstraint("station_id", "obs_time", name="uq_wxstation_obstime"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # 식별자
+    station_id: int = Field(index=True, description="ASOS 지점번호 (청주=131)")
+    obs_time: datetime = Field(index=True, description="관측 시각 (정시)")
+
+    # 관측값
+    ta: Optional[float] = Field(default=None, description="기온 (℃)")
+    hm: Optional[float] = Field(default=None, description="상대습도 (%)")
+    ws: Optional[float] = Field(default=None, description="풍속 (m/s)")
+    wd: Optional[float] = Field(default=None, description="풍향 (deg, 0=북·시계방향)")
+    rn: Optional[float] = Field(default=None, description="강수량 (mm, 무강수=0)")
+
+    created_at: datetime = Field(
+        default_factory=datetime.now, description="DB 저장 시각"
+    )

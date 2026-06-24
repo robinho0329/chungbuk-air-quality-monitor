@@ -16,7 +16,7 @@ from sqlalchemy import Engine, text
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from src.config import DATABASE_URL
-from src.storage.models import AirQualityMeasurement
+from src.storage.models import AirQualityMeasurement, WeatherObservation
 
 # 모듈 전역 엔진. 첫 호출 시 생성.
 _engine: Optional[Engine] = None
@@ -132,3 +132,57 @@ def query_by_station(station_name: str) -> list[AirQualityMeasurement]:
             .order_by(AirQualityMeasurement.data_time)
         )
         return list(session.exec(stmt).all())
+
+
+# ---------------------------------------------------------------------------
+# 기상 관측 (Phase 4 — WeatherObservation)
+# ---------------------------------------------------------------------------
+
+def insert_weather(records: Iterable[WeatherObservation]) -> tuple[int, int]:
+    """기상 관측을 일괄 저장. 중복 (station_id, obs_time)은 무시(INSERT OR IGNORE).
+
+    Returns:
+        (시도 건수, 실제 삽입 건수).
+    """
+    engine = get_engine()
+    records_list = list(records)
+    attempted = len(records_list)
+    if attempted == 0:
+        return 0, 0
+    inserted = 0
+    with engine.begin() as conn:
+        stmt = text(
+            """
+            INSERT OR IGNORE INTO weather_observation
+                (station_id, obs_time, ta, hm, ws, wd, rn, created_at)
+            VALUES
+                (:station_id, :obs_time, :ta, :hm, :ws, :wd, :rn, :created_at)
+            """
+        )
+        for r in records_list:
+            payload = r.model_dump(exclude={"id"})
+            result = conn.execute(stmt, payload)
+            inserted += result.rowcount or 0
+    logger.info(
+        f"insert_weather: 시도 {attempted}건 / 삽입 {inserted}건 "
+        f"(중복 스킵 {attempted - inserted}건)"
+    )
+    return attempted, inserted
+
+
+def query_weather() -> list[WeatherObservation]:
+    """모든 기상 관측을 시각 순으로 반환한다."""
+    engine = get_engine()
+    with Session(engine) as session:
+        stmt = select(WeatherObservation).order_by(WeatherObservation.obs_time)
+        return list(session.exec(stmt).all())
+
+
+def query_weather_times_since(since: datetime) -> set[datetime]:
+    """since 이후 보유한 기상 관측 시각 집합 (갭 탐지/백필용)."""
+    engine = get_engine()
+    with Session(engine) as session:
+        stmt = select(WeatherObservation.obs_time).where(
+            WeatherObservation.obs_time >= since
+        )
+        return set(session.exec(stmt).all())

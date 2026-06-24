@@ -49,6 +49,14 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: uv run python scripts/collect_once.py
 
+      - name: 🌦️ 기상청 ASOS 수집 (WEATHER_API_KEY 있을 때만)
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: "utf-8"
+        run: uv run python scripts/collect_weather.py
+        # 키 없으면 스크립트가 스킵 후 exit 0 → 기존 수집에 영향 없음
+
       - name: 📊 누적 카운트 출력
         run: |
           uv run python -c "
