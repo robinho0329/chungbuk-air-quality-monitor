@@ -11,11 +11,10 @@ name: 🤖 데일리 자율 개발 루프
 # 결과는 reports/daily/YYYY-MM-DD.md + reports/daily/latest.md로 commit·push.
 
 on:
-  schedule:
-    # [Fallback] GitHub 내장 schedule은 best-effort라 지연·드롭이 잦다(실측 4h+ 지연).
-    # 신뢰성은 외부 스케줄러(cron-job.org → workflow_dispatch)에 맡기고, 이 schedule은
-    # 외부가 죽었을 때의 2차 안전망. docs/EXTERNAL_SCHEDULER_SETUP.md 참조.
-    - cron: '15 0 * * *'  # KST 09:15
+  # 트리거는 외부 스케줄러(cron-job.org → workflow_dispatch) 단일화.
+  # 내장 schedule은 best-effort 지연·드롭 + 정시 외부 cron과의 동시 push 충돌로
+  # 실패 알림 메일을 만들 수 있어 제거(collect와 동일 정책). 외부 cron이 매일 1회
+  # 호출하며, 실측상 dispatch 트리거가 안정적으로 동작함. docs/EXTERNAL_SCHEDULER_SETUP.md
   workflow_dispatch:  # [Primary] 외부 cron(cron-job.org)이 매일 1회 호출 + UI 수동
 
 permissions:
