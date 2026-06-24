@@ -138,7 +138,7 @@ async function build() {
       { text: "‘위치’가 아니었다.", options: { color: WHITE, bold: true } },
     ], { x: 0.9, y: 3.95, w: 11.6, h: 0.7, fontSize: 23, fontFace: F, margin: 0 });
     s.addShape(pres.shapes.LINE, { x: 0.92, y: 4.95, w: 7.5, h: 0, line: { color: "3A476A", width: 1.5 } });
-    s.addText("변동의 95%는 측정소(위치)가 아니라 시간·기상에서 왔다.\n관리할 산포와 그냥 둘 변동을 통계로 가르는 것 — 그것이 이 프로젝트의 핵심이자, 내가 증명한 QC 역량이다.", { x: 0.92, y: 5.15, w: 11.4, h: 1.3, fontSize: 15, color: "AEB9DA", lineSpacingMultiple: 1.45, fontFace: F, margin: 0, valign: "top" });
+    s.addText(`변동의 ${S.time_pct}%는 측정소(위치)가 아니라 시간·기상에서 왔다 (위치 기여 ${S.loc_pct}%).\n관리할 산포와 그냥 둘 변동을 통계로 가르는 것 — 그것이 이 프로젝트의 핵심이자, 내가 증명한 QC 역량이다.`, { x: 0.92, y: 5.15, w: 11.4, h: 1.3, fontSize: 15, color: "AEB9DA", lineSpacingMultiple: 1.45, fontFace: F, margin: 0, valign: "top" });
   }
 
   // ───────────────────────── S2 목차
@@ -152,7 +152,7 @@ async function build() {
     const items = [
       ["01", "문제 정의", "산단 대기질 vs 거주지, SPC 상시 감시"],
       ["02", "측정 시스템", "측정 지표·측정소, 무중단 수집 아키텍처"],
-      ["03", "데이터 수집·점검", "108일 누적, 결측·이상치 점검"],
+      ["03", "데이터 수집·점검", `${S.days}일 누적, 결측·이상치 점검`],
       ["04", "관리 기준 설정", "전통 관리도 vs 자기상관 보정 잔차 관리도"],
       ["05", "통계 분석", "Cp/Cpk · 잔차 관리도 · 단지 비교 검정"],
       ["06", "이상탐지·알림 · 현업 전이", "WE Rules·IForest·Discord → GMP 품질관리 전이·결론"],
@@ -398,7 +398,7 @@ async function build() {
     // 우측 인사이트
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 8.85, y: 1.95, w: 3.95, h: 2.25, fill: { color: "FDEDED" }, rectRadius: 0.08 });
     s.addText("우선 관리 — PM2.5 · PM10", { x: 9.1, y: 2.2, w: 3.5, h: 0.4, fontSize: 14.5, bold: true, color: RED, fontFace: F, margin: 0 });
-    s.addText(`전 측정소 Cpk < 1.0 ‘불량 위험’. 특히 ${S.cpk_pm25_min_station} PM2.5 Cpk ${S.cpk_pm25_min}로 최저 → 1순위 관리 대상. 미세먼지가 구조적 핵심 인자.`, { x: 9.1, y: 2.68, w: 3.5, h: 1.45, fontSize: 12.5, color: BODY, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
+    s.addText(`전 측정소에서 PM2.5·PM10·O₃·NO₂가 Cpk < 1.0 ‘불량 위험’. 특히 ${S.cpk_pm25_min_station} PM2.5 Cpk ${S.cpk_pm25_min}로 최저 → 1순위 관리 대상. 미세먼지가 구조적 핵심 인자.`, { x: 9.1, y: 2.68, w: 3.5, h: 1.6, fontSize: 12, color: BODY, lineSpacingMultiple: 1.28, fontFace: F, margin: 0, valign: "top" });
     card(s, 8.85, 4.45, 3.95, 2.25);
     s.addText("관리 양호 — SO₂ · CO", { x: 9.1, y: 4.72, w: 3.5, h: 0.4, fontSize: 14.5, bold: true, color: TEAL, fontFace: F, margin: 0 });
     s.addText("Cpk ≥ 1.2로 규격 대비 여유. Cp/Cpk·USL은 대기환경보전법 환경기준(일·연평균) 기반으로 산출.", { x: 9.1, y: 5.2, w: 3.5, h: 1.4, fontSize: 12.5, color: BODY, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
@@ -435,22 +435,29 @@ async function build() {
     const s = pres.addSlide();
     s.background = { color: WHITE };
     spine(s);
-    header(s, "통계 분석 — 단지 비교 검정", "산단 영향군 vs 거주지 (Welch t-test)");
-    await addChart(s, "group_box.png", 0.7, 1.75, 7.0);
-    s.addText(`※ 전체 누적 ${TOTAL}건. PM2.5 결측 제외 측정치로 산단 4측정소(합산) vs 거주지 1측정소를 Welch t-test 비교.`,
-      { x: 0.7, y: 6.35, w: 7.2, h: 0.6, fontSize: 9.5, italic: true, color: MUTE, lineSpacingMultiple: 1.15, fontFace: F, margin: 0, valign: "top" });
-    // 우측 검정 결과
-    s.addImage({ data: IC.check, x: 8.3, y: 1.95, w: 0.45, h: 0.45 });
-    s.addText("검증 결과", { x: 8.85, y: 1.95, w: 4, h: 0.45, fontSize: 17, bold: true, color: COBALT, valign: "middle", fontFace: F, margin: 0 });
-    s.addShape(pres.shapes.LINE, { x: 8.3, y: 2.6, w: 4.5, h: 0, line: { color: BORDER, width: 1 } });
-    s.addText("가설", { x: 8.3, y: 2.8, w: 4.5, h: 0.35, fontSize: 12, bold: true, color: MUTE, fontFace: F, margin: 0 });
-    s.addText("“산단 영향군의 PM2.5 평균이 거주지보다 높을 것이다”", { x: 8.3, y: 3.15, w: 4.55, h: 0.8, fontSize: 14, bold: true, color: INK, lineSpacingMultiple: 1.25, fontFace: F, margin: 0, valign: "top" });
+    header(s, "통계 분석 — 단지 비교 & 변동의 출처", "산단 vs 거주지(Welch t-test) + PM2.5 분산분해");
+    await addChart(s, "group_box.png", 0.55, 1.7, 6.4);
+    s.addText(`※ 전체 누적 ${TOTAL}건 중 PM2.5 유효 ${Number(S.pm25_valid).toLocaleString("en-US")}건(결측 제외) = 산단 4측정소(합산) + 거주지 1측정소.`,
+      { x: 0.55, y: 5.5, w: 6.6, h: 0.55, fontSize: 9.5, italic: true, color: MUTE, lineSpacingMultiple: 1.15, fontFace: F, margin: 0, valign: "top" });
+    // 분산분해 바 (좌하단)
+    await addChart(s, "variance_decomp.png", 0.55, 6.05, 6.6);
+    // 우측: 검증 결과 + 분산분해 해석(훅 회수)
+    s.addImage({ data: IC.check, x: 7.4, y: 1.85, w: 0.42, h: 0.42 });
+    s.addText("검증 결과 — 진짜 변동 원인", { x: 7.92, y: 1.85, w: 5, h: 0.42, fontSize: 16, bold: true, color: COBALT, valign: "middle", fontFace: F, margin: 0 });
+    s.addShape(pres.shapes.LINE, { x: 7.4, y: 2.42, w: 5.4, h: 0, line: { color: BORDER, width: 1 } });
     s.addText([
-      { text: "Welch t-test", options: { bold: true, color: COBALT } },
-      { text: "로 두 군 평균차의 통계적 유의성을 검정. Cohen’s d로 효과크기를 함께 산출해 실질적 차이를 확인.", options: { color: BODY } },
-    ], { x: 8.3, y: 4.05, w: 4.55, h: 1.3, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
-    pill(s, 8.3, 5.55, 2.0, 0.5, "가설 검정 자동화", COBALT, WHITE, 12.5);
-    s.addText("daily 루프가 MD·Word 리포트 자동 생성", { x: 8.3, y: 6.12, w: 4.55, h: 0.4, fontSize: 11, italic: true, color: MUTE, fontFace: F, margin: 0 });
+      { text: "Welch t-test", options: { bold: true, color: INK } },
+      { text: "로 산단>거주지 평균차의 유의성을 검정했지만, 두 분포는 크게 겹친다.", options: { color: BODY }, breakLine: true },
+    ], { x: 7.4, y: 2.6, w: 5.4, h: 0.9, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 7.4, y: 3.65, w: 5.4, h: 1.5, fill: { color: LAV }, rectRadius: 0.08 });
+    s.addText([
+      { text: `위치(측정소)는 PM2.5 총변동의 ${S.loc_pct}%만 설명`, options: { bold: true, color: COBALT, breakLine: true } },
+      { text: `시간·기상이 ${S.time_pct}% — 변동의 대부분은 ‘어디서’가 아니라 ‘언제’.`, options: { color: BODY } },
+    ], { x: 7.65, y: 3.85, w: 4.95, h: 1.1, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
+    s.addText([
+      { text: "→ 결론: ", options: { bold: true, color: INK } },
+      { text: "‘라인(위치)별 관리’가 아니라 ‘공통원인(시계열) 관리’가 답. 잔차 관리도가 바로 그 해법.", options: { color: BODY } },
+    ], { x: 7.4, y: 5.35, w: 5.4, h: 1.1, fontSize: 12.5, lineSpacingMultiple: 1.3, fontFace: F, margin: 0, valign: "top" });
     pageNum(s, 12);
   }
 
@@ -552,7 +559,7 @@ async function build() {
       [{ text: "예상 질문", options: { fill: { color: COBALT }, color: WHITE, bold: true, align: "center", valign: "middle" } },
        { text: "대응 요지", options: { fill: { color: COBALT }, color: WHITE, bold: true, align: "center", valign: "middle" } }],
       ["왜 제조 데이터가 아니라 대기질인가?", "공정과 통계 구조가 같은 ‘실시간 실데이터’라 일부러 선택. 더미는 SPC가 잡아야 할 결측·이상·드리프트가 사라져 무의미."],
-      ["대기질은 통제 불가인데 Improve는?", "공정 조작 불가가 한계. Improve를 ‘방법론 개선(잔차 보정 거짓경보 44%→2%)’ + alert/action 정책으로 매핑."],
+      ["대기질은 통제 불가인데 Improve는?", `공정 조작 불가가 한계. Improve를 ‘방법론 개선(잔차 보정 거짓경보 ${BA})’ + alert/action 정책으로 매핑.`],
       ["효과크기가 작은데(d≈0.2~0.3) 의미 있나?", "표본 1만이라 유의는 당연. 그래서 효과크기·η²로 ‘실질 차이는 작다’를 정직히 보고 — 통계적 유의 ≠ 실질적 중요."],
       ["자기상관이 왜 그렇게 중요한가?", "lag-1 ACF 0.93 → 유효표본 n_eff≈75로 명목 n의 1/27. p값이 과대평가됨. 잔차 관리도로 보정해 신호를 분리."],
       ["위치 차이가 작으면 결론은 뭔가?", "산포의 출처를 시간·기상(공통원인)으로 분리 → ‘라인별 관리’가 아니라 ‘공통원인 관리’가 답이라는 진단."],
