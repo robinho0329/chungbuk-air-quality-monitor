@@ -169,6 +169,29 @@ fig.tight_layout()
 fig.savefig(IMG / "group_box.png", bbox_inches="tight")
 plt.close(fig)
 
+# ── 3b. 분산분해: PM2.5 변동의 출처 (위치 vs 시간·기상) ───────────
+_pm_vd = df.dropna(subset=["pm25"])
+_g = _pm_vd["pm25"].mean()
+_sst = ((_pm_vd["pm25"] - _g) ** 2).sum()
+_ssl = _pm_vd.groupby("station_name")["pm25"].apply(lambda s: len(s) * (s.mean() - _g) ** 2).sum()
+_loc = _ssl / _sst * 100
+_tim = 100 - _loc
+fig, ax = plt.subplots(figsize=(8.4, 2.2), dpi=200)
+ax.barh([0], [_loc], color=GRAY, height=0.55, label=f"위치(측정소)  {_loc:.1f}%")
+ax.barh([0], [_tim], left=[_loc], color=COBALT, height=0.55, label=f"시간·기상·기타  {_tim:.1f}%")
+# 위치 세그먼트(2.4%)는 너무 좁아 막대 위쪽에 라벨, 시간 세그먼트는 막대 안에.
+ax.text(_loc, 0.42, f"위치 {_loc:.1f}%", ha="left", va="bottom", color=NAVY, fontsize=11, fontweight="bold")
+ax.text(_loc + _tim / 2, 0, f"시간·기상·기타  {_tim:.1f}%", ha="center", va="center", color="white", fontsize=13, fontweight="bold")
+ax.set_xlim(0, 100)
+ax.set_ylim(-0.5, 0.75)
+ax.set_yticks([])
+ax.set_xticks([0, 20, 40, 60, 80, 100])
+ax.set_title("PM2.5 총변동 기여도 — 측정소(위치)가 설명하는 비중은 극히 작다", fontsize=13, fontweight="bold", color=NAVY, pad=10)
+ax.spines[["top", "right", "left"]].set_visible(False)
+fig.tight_layout()
+fig.savefig(IMG / "variance_decomp.png", bbox_inches="tight")
+plt.close(fig)
+
 # ── 4. 잔차 관리도 Before/After (자기상관 보정) ───────────────────
 # 대표: 오송읍 PM2.5 (Cpk 최저권)
 target_st = "오송읍" if "오송읍" in stations else stations[0]
@@ -290,6 +313,15 @@ for st in stations:
             _lowest_v, _lowest_st = c, st
     except (InsufficientSampleError, ValueError):
         pass
+
+# PM2.5 분산분해: 위치(측정소) η² vs 시간·기상. 훅("변동의 대부분은 시간·기상")의 정량 근거.
+_pm = df.dropna(subset=["pm25"])
+_grand = _pm["pm25"].mean()
+_ss_total = ((_pm["pm25"] - _grand) ** 2).sum()
+_ss_loc = _pm.groupby("station_name")["pm25"].apply(lambda g: len(g) * (g.mean() - _grand) ** 2).sum()
+_loc_pct = round(_ss_loc / _ss_total * 100, 1)
+_time_pct = round(100 - _loc_pct, 1)
+_pm25_valid = int(len(_pm))
 stats = {
     "total": _total,
     "period_start": _times[0].strftime("%Y.%m.%d"),
@@ -301,6 +333,9 @@ stats = {
     "resid_after_pct": round(rr.resid_violation_rate * 100),
     "cpk_pm25_min": round(_lowest_v, 2),
     "cpk_pm25_min_station": _lowest_st,
+    "pm25_valid": _pm25_valid,
+    "loc_pct": _loc_pct,
+    "time_pct": _time_pct,
 }
 (IMG.parent / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
 print(f"   stats.json 저장: 총 {_total}건 · {_days}일 · 최저 PM2.5 Cpk {_lowest_v:.2f}({_lowest_st})")
