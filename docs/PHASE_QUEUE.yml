@@ -8,12 +8,13 @@ phases:
       - id: WE_RULES
         title: Western Electric 8 Rules 자동 판정
         priority: 3
-        status: pending
+        status: completed
+        completed_at: 2026-06-16
         depends_on: [DATA_30_PER_STATION]
         deliverables:
-          - src/analysis/western_electric.py
+          - src/analysis/western_electric.py    # Rule 1~8 (테스트 32건)
           - tests/test_western_electric.py
-          - dashboard 페이지에 룰 위반 표시
+          - dashboard/pages/5_📈_관리도.py        # 룰별 위반 테이블
 
       - id: CONTROL_CHART
         title: EWMA/CUSUM/X-bar 관리도 데이터 생성
@@ -53,10 +54,11 @@ phases:
       - id: ISOLATION_FOREST
         title: IsolationForest 다변량 이상 탐지
         priority: 2
-        status: pending
+        status: completed
+        completed_at: 2026-06-16
         depends_on: [DATA_50_PER_STATION]
         deliverables:
-          - src/analysis/anomaly.py (sklearn IsolationForest)
+          - src/analysis/anomaly.py    # sklearn IsolationForest, detect_anomalies(_by_station)
           - tests/test_anomaly.py
 
   - phase: 3
@@ -76,12 +78,13 @@ phases:
       - id: DISCORD_ALERT
         title: Discord Webhook 알림 (Cpk 임계 미달/룰 위반)
         priority: 2
-        status: pending
+        status: completed
+        completed_at: 2026-06-16
         depends_on: [WE_RULES]
         deliverables:
-          - src/notifier/discord.py
-          - flows/alert_flow.py
-          - GHA workflow에 알림 단계 추가
+          - src/notifier/discord.py        # DiscordAlert + send_alert (테스트 14건)
+          - flows/alert_flow.py            # Cpk·WE Rules 점검 → 전송
+          - .github/workflows/collect.yml  # 수집 후 알림 단계
 
       - id: DMAIC_REPORT
         title: DMAIC 분석 보고서 자동 생성 (PDF)
