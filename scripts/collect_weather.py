@@ -38,13 +38,15 @@ def main() -> int:
     from src.storage.database import init_db, insert_weather
 
     now = datetime.now(KST)
+    # 기상청 ASOS는 전날 자료까지만 제공 — end를 어제 23시로 고정
+    yesterday = (now - timedelta(days=1)).replace(hour=23, minute=0, second=0)
     start = now - timedelta(days=BACKFILL_DAYS)
     init_db()
     try:
         with KmaAsosClient() as client:
             obs = client.get_hourly(
                 start_dt=start.strftime("%Y%m%d"), start_hh=start.strftime("%H"),
-                end_dt=now.strftime("%Y%m%d"), end_hh=now.strftime("%H"),
+                end_dt=yesterday.strftime("%Y%m%d"), end_hh="23",
                 station_id=KMA_ASOS_STATION_ID,
             )
     except Exception as e:  # noqa: BLE001 — 수집 실패가 전체 워크플로를 깨지 않게
