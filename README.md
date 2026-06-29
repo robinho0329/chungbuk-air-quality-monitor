@@ -13,7 +13,7 @@
 📂 **레포**: https://github.com/robinho0329/chungbuk-air-quality-monitor
 
 > 클릭만 하시면 매시 자동 누적되는 충북 5개 측정소 대기질 데이터를
-> 6페이지(홈/수집 모니터링/실시간 측정값/공정능력 분석/단지 비교/관리도)에서 확인할 수 있습니다.
+> 7페이지(홈/수집 모니터링/실시간 측정값/공정능력 분석/단지 비교/관리도·WE Rules/이상탐지/풍향·기상분석)에서 확인할 수 있습니다.
 > 컴퓨터를 꺼도 GitHub Actions가 매시 데이터를 추가하므로 계속 새로워집니다.
 
 ---
@@ -43,7 +43,7 @@ QC/API 생산관리 직무에서 핵심 역량인 **SPC(통계적 공정관리)*
 | **M**easure | 측정 시스템 구축 | `collectors/airkorea.py` + `flows/collect_flow.py` + GitHub Actions 매시 자동 수집 |
 | **A**nalyze | 통계 분석 | `analysis/capability.py` Cp/Cpk + `hypothesis_test.py` Welch t-test/ANOVA + 자기상관 진단 |
 | **I**mprove | 개선 권고 | 잔차 관리도로 거짓경보 48%→2% + Cpk 낮은 지표 우선관리 도출 (DMAIC PDF) |
-| **C**ontrol | 지속 모니터링 | Streamlit 대시보드(관리도/공정능력/GIS) + self-healing 수집 (WE Rules·알림 예정) |
+| **C**ontrol | 지속 모니터링 | Streamlit 대시보드(관리도+WE Rules/공정능력/GIS/이상탐지/풍향분석) + self-healing 수집 + Discord 알림 |
 
 ---
 
@@ -63,8 +63,8 @@ flowchart LR
     DB[("SQLite data.db")]
     REPO["GitHub Repo<br/>commit and push"]
     CLOUD["Streamlit Cloud<br/>push 감지 자동 재배포"]
-    DASH["대시보드 6페이지"]
-    LOCAL["로컬 PC<br/>분석 · pytest 174건 · 수집 X"]
+    DASH["대시보드 7페이지"]
+    LOCAL["로컬 PC<br/>분석 · pytest 174건+ · 수집 X"]
 
     CRON -->|"workflow_dispatch REST API"| GHA
     SCHED -.->|"fallback"| GHA
@@ -173,9 +173,9 @@ uv run pytest -q   # 174건 통과
 - [x] **Phase 2 (가설검정)**: Welch t-test/ANOVA + Cohen's d/η² + MD·Word 리포트 자동화 (`hypothesis_test.py`, 테스트 12건)
 - [x] **Phase 2 (자기상관 보정)**: 잔차 관리도(일주기 제거+AR(1)) — PM2.5 거짓경보율 48%→2% (`residual_chart.py`, 테스트 10건)
 - [x] **Phase 3 (운영)**: Streamlit Cloud 배포 + 외부 cron 시간당 수집 + self-healing 백필
-- [ ] **Phase 2 잔여**: Western Electric Rules, IsolationForest
-- [ ] **Phase 3 잔여**: Discord Webhook 알림
-- [ ] **Phase 4** (선택): 기상청 API 결합, 풍향 회귀 분석 (데이터 축적 후)
+- [x] **Phase 2 잔여**: Western Electric Rules (8개 룰, 대시보드 통합), IsolationForest 이상탐지 (대시보드 6페이지)
+- [x] **Phase 3 잔여**: Discord Webhook 알림 (SPC 이상 시 자동 전송, `flows/alert_flow.py`, GitHub Actions 통합)
+- [x] **Phase 4**: 기상청 ASOS API 결합 (`collectors/weather.py`), 풍향 회귀 분석 (`analysis/wind_regression.py`, 대시보드 7페이지)
 - [x] **최종 산출물**: DMAIC 분석 보고서 (PDF) — `scripts/generate_dmaic_report.py`, D-M-A-I-C 3페이지
 
 ---
