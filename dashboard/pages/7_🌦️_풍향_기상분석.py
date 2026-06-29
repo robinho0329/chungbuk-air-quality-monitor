@@ -83,6 +83,35 @@ def load_weather_df() -> pd.DataFrame:
 
 df_wx = load_weather_df()
 
+# ----------------------------------------------------------------------
+# 날짜 범위 필터 (대기질 데이터 범위에 맞춤)
+# ----------------------------------------------------------------------
+if not df_wx.empty and not df_air.empty:
+    air_min = df_air["data_time"].min().date()
+    air_max = df_air["data_time"].max().date()
+    wx_min = df_wx["obs_time"].min().date()
+    wx_max = df_wx["obs_time"].max().date()
+    date_min = max(air_min, wx_min)
+    date_max = min(air_max, wx_max)
+
+    if date_min <= date_max:
+        st.markdown("**📅 분석 기간**")
+        fc1, fc2 = st.columns(2)
+        sel_start = fc1.date_input("시작일", value=date_min, min_value=date_min, max_value=date_max, key="wx_start")
+        sel_end = fc2.date_input("종료일", value=date_max, min_value=date_min, max_value=date_max, key="wx_end")
+        if sel_start > sel_end:
+            sel_start, sel_end = sel_end, sel_start
+
+        df_air = df_air[
+            (df_air["data_time"].dt.date >= sel_start) &
+            (df_air["data_time"].dt.date <= sel_end)
+        ]
+        df_wx = df_wx[
+            (df_wx["obs_time"].dt.date >= sel_start) &
+            (df_wx["obs_time"].dt.date <= sel_end)
+        ]
+        st.caption(f"선택 기간: {sel_start} ~ {sel_end} | 대기질 {len(df_air):,}건 / 기상 {len(df_wx):,}건")
+
 if df_wx.empty:
     st.info(
         "📡 기상청 ASOS 데이터가 아직 수집되지 않았습니다.\n\n"
@@ -287,20 +316,31 @@ if selected_predictors:
             "나머지는 배출원 가동률·교통량·화학반응 등 미포함 요인의 영향입니다."
         )
 
-        # 풍속 vs 농도 산점도 (주요 관계 시각화)
-        if "ws" in sub.columns and pollutant in sub.columns:
-            plot_sub = sub[[pollutant, "ws", "wd"]].dropna()
+        # 풍속 vs 농도 산점도 (OLS 트렌드라인 직접 계산)
+        if "ws" in sub.columns and pollutant in sub.columns and "ws" in reg_res.coef:
+            plot_sub = sub[[pollutant, "ws"]].dropna()
             if not plot_sub.empty:
-                fig_ws = px.scatter(
-                    plot_sub, x="ws", y=pollutant,
-                    opacity=0.4,
-                    trendline="ols",
-                    labels={
-                        "ws": "풍속 (m/s)",
-                        pollutant: POLLUTANT_DISPLAY.get(pollutant, pollutant),
-                    },
-                    title=f"{station} · 풍속 vs {POLLUTANT_DISPLAY.get(pollutant, pollutant)}",
+                import numpy as _np
+                ws_range = _np.linspace(plot_sub["ws"].min(), plot_sub["ws"].max(), 50)
+                trend_y = reg_res.intercept + reg_res.coef["ws"] * ws_range
+
+                fig_ws = go.Figure()
+                fig_ws.add_trace(go.Scatter(
+                    x=plot_sub["ws"], y=plot_sub[pollutant],
+                    mode="markers", name="측정값",
+                    marker=dict(color="#aec7e8", opacity=0.5, size=5),
+                ))
+                fig_ws.add_trace(go.Scatter(
+                    x=ws_range, y=trend_y,
+                    mode="lines", name="OLS 트렌드",
+                    line=dict(color="#d62728", width=2),
+                ))
+                fig_ws.update_layout(
                     height=360,
+                    title=f"{station} · 풍속 vs {POLLUTANT_DISPLAY.get(pollutant, pollutant)}",
+                    xaxis_title="풍속 (m/s)",
+                    yaxis_title=POLLUTANT_DISPLAY.get(pollutant, pollutant),
+                    hovermode="closest",
                 )
                 st.plotly_chart(fig_ws, use_container_width=True)
 
