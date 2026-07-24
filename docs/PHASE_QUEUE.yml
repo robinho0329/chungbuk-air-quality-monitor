@@ -105,8 +105,9 @@ phases:
       - id: WEATHER_API
         title: 기상청 API 결합 + 풍향 회귀 분석
         priority: 1
-        status: in_progress   # 파이프라인 구축 완료, 데이터 누적 대기
+        status: completed
         started_at: 2026-06-24
+        completed_at: 2026-07-24
         depends_on: [DATA_1000]
         deliverables:
           - src/collectors/weather.py        # ASOS 시간자료 클라이언트(테스트 12건)
@@ -114,10 +115,35 @@ phases:
           - scripts/collect_weather.py       # 매시 수집(collect.yml에 통합)
           - src/analysis/wind_regression.py  # 오염장미·산단방위검정·기상회귀(테스트 11건)
           - tests/test_weather.py, tests/test_wind_regression.py
+          - scripts/generate_wind_report.py  # 실분석 리포트(daily 루프 자동 실행)
+          - reports/wind/YYYY-MM-DD.md       # 오염장미·방위검정·기상회귀 결과
         note: |
-          코드·수집 파이프라인은 완성. 실분석 산출(풍향 회귀 차트·검정)은
-          (1) WEATHER_API_KEY(공공데이터포털 ASOS) 등록 + (2) 기상 데이터 누적이 선행조건.
-          분산분해(PM2.5 시간·기상 97.6%)의 '기상' 내역을 실증하는 것이 목표.
+          기상 654건(6/26~7/23) 누적 후 실분석 완료. H4 지지 — 유의한 양의 방위 효과 12건
+          (최대: 용암동←청주산단 PM2.5 +4.4㎍/㎥, d=0.73). 기상 3변수 R²: O3 41~50% vs
+          PM2.5 3~14% → PM2.5는 배출·수송 지배 실증. 겨울 데이터 누적 시 계절 대비 재분석.
+
+  - phase: 5
+    items:
+      - id: SEASONAL_CONTRAST
+        title: 계절 대비 재분석 (여름 vs 겨울 오염장미·방위 효과)
+        priority: 2
+        status: pending
+        depends_on: [WEATHER_API, DATA_WINTER]
+        deliverables:
+          - scripts/generate_wind_report.py  # 계절 분리 섹션 추가
+          - docs/INSIGHTS.md                  # 계절 대비 인사이트
+        note: 겨울(난방·북서 계절풍) 데이터가 모이는 12월 이후 착수 가능. 자연 누적 대기.
+
+      - id: MULTIVARIATE_SPC
+        title: 다변량 SPC (Hotelling T² 관리도) — 6지표 동시 관리
+        priority: 2
+        status: pending
+        depends_on: []
+        deliverables:
+          - src/analysis/multivariate_spc.py  # T² 통계량 + UCL(F분포)
+          - tests/test_multivariate_spc.py
+          - dashboard/pages/5_📈_관리도.py     # T² 차트 탭 추가
+        note: 단변량 관리도 6개를 하나의 T² 차트로 통합 — 상관 구조까지 감시.
 
 # 데이터 충분도 마일스톤
 # ※ 2026-05-29 기준 3MONTH 백필로 총 ~10,745건(측정소당 ~2,150건) 확보 → 아래 4개 모두 달성됨.
@@ -136,6 +162,9 @@ data_milestones:
   DATA_1000:
     description: 총 1000건 이상
     status: met  # 2026-05-29
+  DATA_WINTER:
+    description: 겨울철(12~2월) 대기질·기상 조인 데이터 측정소당 100건 이상
+    status: pending  # 자연 누적 대기 (2026-12 이후)
 
 # 매일 자율 루프에서 자동으로 수행하는 작업 (daily_dev_loop.py)
 daily_auto_tasks:
