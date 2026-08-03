@@ -47,7 +47,21 @@ jobs:
           AIRKOREA_API_KEY_ENCODED: ${{ secrets.AIRKOREA_API_KEY }}
           PYTHONUTF8: "1"
           PYTHONIOENCODING: "utf-8"
-        run: uv run python scripts/collect_once.py
+        # 종료 코드 75 = 상류(apis.data.go.kr) 미응답으로 이번 슬롯만 건너뜀.
+        # self-heal 72h 윈도가 다음 성공 실행에서 메우므로 데이터는 잃지 않는다.
+        # 이걸 실패로 두면 최근 10회 중 5회가 빨개져 진짜 고장을 구별할 수 없다.
+        # 감추지는 않는다 — warning 주석과 요약에 남겨 건너뛴 사실이 보이게 한다.
+        run: |
+          set +e
+          uv run python scripts/collect_once.py
+          code=$?
+          set -e
+          if [ "$code" -eq 75 ]; then
+            echo "::warning::상류 API 미응답 — 이번 슬롯 건너뜀 (self-heal 이 다음 성공 실행에서 복구)"
+            echo "- ⏭️ 상류 API 미응답으로 이번 슬롯 건너뜀" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit $code
 
       - name: 🌦️ 기상청 ASOS 수집 (WEATHER_API_KEY 있을 때만)
         env:
