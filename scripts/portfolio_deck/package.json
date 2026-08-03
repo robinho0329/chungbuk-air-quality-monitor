@@ -1,0 +1,20 @@
+{
+  "name": "chungbuk-air-quality-portfolio-deck",
+  "version": "1.0.0",
+  "private": true,
+  "description": "충북권 대기질 SPC 모니터링 포트폴리오 덱 생성기 — deck.js 가 PPTX 를 빌드한다",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node deck.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.3.0",
+    "sharp": "^0.33.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
