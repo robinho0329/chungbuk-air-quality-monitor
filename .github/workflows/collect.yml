@@ -4,12 +4,24 @@ name: 🌬️ 충북 대기질 자동 수집
 # 결과 SQLite DB는 레포에 자동 커밋되어 영속 저장.
 
 on:
-  # 트리거는 외부 스케줄러(cron-job.org → workflow_dispatch) 단일화.
-  # GitHub 내장 schedule은 best-effort라 드롭이 잦고 정시 외부 cron과 동시 push 충돌로
-  # 실패 알림 메일을 양산해 제거했다. 외부 cron이 최대 3일 죽어도 self-heal(72h 윈도)이
-  # 다음 성공 실행에서 갭을 자동 복구하므로 데이터 완결성은 유지된다.
-  # docs/EXTERNAL_SCHEDULER_SETUP.md 참조.
-  workflow_dispatch:  # [Primary] 외부 cron(cron-job.org) 매시 호출 + UI 수동 실행
+  # [Primary] 외부 스케줄러(cron-job.org → workflow_dispatch) 매시 호출 + UI 수동 실행.
+  workflow_dispatch:
+
+  # [Safety net] 6시간마다 예비 실행.
+  #
+  # 내장 schedule은 2026-06-19(7926cd3)에 제거했었다. 이유는 ① best-effort라 드롭이
+  # 잦고 ② 정시 외부 cron과 동시 push 충돌로 실패 알림 메일을 양산해서다.
+  # 그 판단 자체는 맞았지만, 외부 cron이 **유일한** 트리거가 되면서 단일 장애점이 됐다.
+  # 실제로 2026-08-26 외부 cron 호출이 끊긴 뒤 16일간 수집이 0건이었고,
+  # self-heal 윈도(72h)를 한참 넘겨 그 구간은 자동 복구도 불가능해졌다.
+  #
+  # 그래서 '매시 수집'이 아니라 **72h 윈도를 지키는 최소 안전망**으로만 되돌린다.
+  #   - 6시간 간격 → 외부 cron이 죽어도 갭이 72h 를 넘지 않아 self-heal 이 메운다
+  #   - 분을 :45 로 둠 → 외부 cron(:05/:15/:35/:55)과 시각이 겹치지 않아 push 충돌 회피
+  #   - concurrency 그룹이 중복 실행을 막고, 커밋 단계에 충돌 재시도가 이미 있다
+  # 외부 cron 이 정상이면 이 트리거가 실제로 새로 가져올 데이터는 거의 없다.
+  schedule:
+    - cron: "45 */6 * * *"  # 00:45 / 06:45 / 12:45 / 18:45 UTC
 
 permissions:
   contents: write  # 결과 DB 커밋 & push 권한
