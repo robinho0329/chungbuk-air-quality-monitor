@@ -60,11 +60,17 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: uv run python scripts/generate_hypothesis_report.py
 
+      - name: 🌦️ 풍향·기상 분석 리포트 (조인 표본 100+/측정소 시 자동 생성)
+        env:
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: "utf-8"
+        run: uv run python scripts/generate_wind_report.py
+
       - name: 📤 리포트 자동 commit & push (충돌 시 rebase 재시도)
         run: |
           git config user.email "daily-loop@github-actions"
           git config user.name "Daily Dev Loop Bot"
-          git add reports/daily/ reports/hypothesis/
+          git add reports/daily/ reports/hypothesis/ reports/wind/
           if git diff --staged --quiet; then
             echo "리포트 변경 없음 — 커밋 스킵"
             exit 0
